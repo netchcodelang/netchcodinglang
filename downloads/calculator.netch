@@ -1,0 +1,128 @@
+<using.netch>
+<window.using>
+
+window.title("Calculator")
+window.size(240, 320)
+
+display = "0"
+first_number = 0
+pending_op = ""
+
+window.text.screen = display
+text.screen.position(20, 20)
+text.screen.fontsize(28)
+
+function refresh():
+    window.text.screen = display
+
+function press_digit(d):
+    if display == "0":
+        display = d
+    else:
+        display = display + d
+    run(refresh)
+
+function press_op(o):
+    first_number = number(display)
+    pending_op = o
+    display = "0"
+    run(refresh)
+
+function press_equals():
+    second_number = number(display)
+    if pending_op == "/":
+        if second_number == 0:
+            display = "Error"
+            pending_op = ""
+            run(refresh)
+    if pending_op == "+":
+        result = first_number + second_number
+        display = result
+    if pending_op == "-":
+        result = first_number - second_number
+        display = result
+    if pending_op == "*":
+        result = first_number * second_number
+        display = result
+    if pending_op == "/":
+        if second_number != 0:
+            result = first_number / second_number
+            display = result
+    pending_op = ""
+    run(refresh)
+
+function press_clear():
+    display = "0"
+    first_number = 0
+    pending_op = ""
+    run(refresh)
+
+window.button.b7 = action run(press_digit(7))
+button.b7.position(20, 70)
+button.b7.size(45, 45)
+
+window.button.b8 = action run(press_digit(8))
+button.b8.position(70, 70)
+button.b8.size(45, 45)
+
+window.button.b9 = action run(press_digit(9))
+button.b9.position(120, 70)
+button.b9.size(45, 45)
+
+window.button.bdiv = action run(press_op(/))
+button.bdiv.position(170, 70)
+button.bdiv.size(45, 45)
+button.bdiv.color = "#3a3b44"
+
+window.button.b4 = action run(press_digit(4))
+button.b4.position(20, 120)
+button.b4.size(45, 45)
+
+window.button.b5 = action run(press_digit(5))
+button.b5.position(70, 120)
+button.b5.size(45, 45)
+
+window.button.b6 = action run(press_digit(6))
+button.b6.position(120, 120)
+button.b6.size(45, 45)
+
+window.button.bmul = action run(press_op(*))
+button.bmul.position(170, 120)
+button.bmul.size(45, 45)
+button.bmul.color = "#3a3b44"
+
+window.button.b1 = action run(press_digit(1))
+button.b1.position(20, 170)
+button.b1.size(45, 45)
+
+window.button.b2 = action run(press_digit(2))
+button.b2.position(70, 170)
+button.b2.size(45, 45)
+
+window.button.b3 = action run(press_digit(3))
+button.b3.position(120, 170)
+button.b3.size(45, 45)
+
+window.button.bsub = action run(press_op(-))
+button.bsub.position(170, 170)
+button.bsub.size(45, 45)
+button.bsub.color = "#3a3b44"
+
+window.button.b0 = action run(press_digit(0))
+button.b0.position(20, 220)
+button.b0.size(95, 45)
+
+window.button.bclear = action run(press_clear)
+button.bclear.position(120, 220)
+button.bclear.size(45, 45)
+button.bclear.color = "#d9534a"
+
+window.button.badd = action run(press_op(+))
+button.badd.position(170, 220)
+button.badd.size(45, 45)
+button.badd.color = "#3a3b44"
+
+window.button.beq = action run(press_equals)
+button.beq.position(20, 270)
+button.beq.size(195, 45)
+button.beq.color = "#a3e635"
