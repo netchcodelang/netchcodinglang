@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Why? — NetchLang 2</title>
+<meta name="description" content="netch has been discontinued and is being recreated as NetchLang 2. Here's why." />
+<link id="theme-favicon" rel="icon" href="assets/logo-dark.png" />
+<script>document.documentElement.dataset.theme = localStorage.getItem('netch-theme') || 'dark';</script>
+<link rel="stylesheet" href="style.css" />
+<style>
+  .why-main { max-width: 640px; margin: 0 auto; padding: 60px 24px 100px; }
+  .why-main h1 { font-size: clamp(30px, 4vw, 42px); margin-bottom: 18px; }
+  .why-main p { font-size: 17px; color: var(--muted); margin-bottom: 18px; }
+  .why-main .lead { color: var(--ink); font-size: 19px; }
+  .old-download-box {
+    margin-top: 40px;
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-alt);
+  }
+  .old-download-box h3 { font-size: 17px; margin-bottom: 8px; }
+  .old-download-box p { font-size: 14px; margin-bottom: 16px; }
+
+  .warn-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 200;
+  }
+  .warn-modal-overlay.active { display: flex; }
+  .warn-modal {
+    background: var(--bg-alt);
+    border-radius: 14px;
+    padding: 28px;
+    max-width: 420px;
+    width: 90vw;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.4);
+  }
+  .warn-modal h3 { font-size: 19px; margin-bottom: 12px; color: #b34700; }
+  .warn-modal p { font-size: 14.5px; color: var(--muted); margin-bottom: 20px; }
+  .warn-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+<div class="notice-banner">
+  <div class="wrap">
+    ⚠ netch has been discontinued. It's being recreated as NetchLang 2.
+  </div>
+</div>
+
+<div class="wrap">
+  <nav>
+    <a href="index.html" class="brand">
+      <img src="assets/logo-light.png" alt="netch logo" />
+      NetchLang 2
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://discord.gg/qxUgVgeZNE" target="_blank" rel="noopener">Discord</a>
+      <button class="theme-toggle" type="button" data-theme-toggle>Light mode</button>
+    </div>
+  </nav>
+</div>
+
+<main class="why-main">
+  <h1>Why is netch gone?</h1>
+  <p class="lead">
+    netch (the original version) has been discontinued and shut down.
+  </p>
+  <p>
+    Rather than keep patching the original, it's being recreated from scratch as
+    <strong>NetchLang 2</strong> — same goal as always: the easiest and best coding language on earth,
+    just built better this time around.
+  </p>
+  <p>
+    NetchLang 2 is coming soon. The best way to hear when it's ready is to join the Discord server —
+    that's where updates get posted first.
+  </p>
+  <div class="cta-row">
+    <a class="btn btn-primary" href="https://discord.gg/qxUgVgeZNE" target="_blank" rel="noopener">Join the Discord</a>
+  </div>
+
+  <div class="old-download-box">
+    <h3>Still want the old netch?</h3>
+    <p>
+      The original netch (netch 1) still technically works, but it's discontinued, unsupported,
+      and won't receive any more updates or fixes.
+    </p>
+    <button class="btn btn-secondary" id="download-old-btn">Download netch 1 (discontinued)</button>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-inner">
+      <a href="index.html" class="brand"><img src="assets/logo-light.png" alt="NetchLang logo" /> NetchLang 2</a>
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="https://discord.gg/qxUgVgeZNE" target="_blank" rel="noopener">Discord</a>
+      </div>
+    </div>
+    <div class="footer-note">netch has been discontinued and shut down — NetchLang 2 is coming soon.</div>
+  </div>
+</footer>
+
+<div class="warn-modal-overlay" id="warn-modal-overlay">
+  <div class="warn-modal">
+    <h3>⚠ This is the old, discontinued netch</h3>
+    <p>
+      You're about to download <strong>netch 1</strong> — the original version, which has been
+      discontinued and shut down. It won't receive any more updates, fixes, or support.
+      NetchLang 2 (coming soon) is the actively developed replacement.
+    </p>
+    <div class="warn-modal-actions">
+      <button class="btn btn-secondary" id="warn-cancel-btn">Cancel</button>
+      <a class="btn btn-primary" id="warn-continue-btn" href="downloads/installer.py" download>Download anyway</a>
+    </div>
+  </div>
+</div>
+
+<script src="theme.js"></script>
+<script>
+  const overlay = document.getElementById('warn-modal-overlay');
+  document.getElementById('download-old-btn').addEventListener('click', () => {
+    overlay.classList.add('active');
+  });
+  document.getElementById('warn-cancel-btn').addEventListener('click', () => {
+    overlay.classList.remove('active');
+  });
+  document.getElementById('warn-continue-btn').addEventListener('click', () => {
+    overlay.classList.remove('active');
+  });
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('active');
+  });
+</script>
+</body>
+</html>

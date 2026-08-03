@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NetchLang 2 — coming soon</title>
+<meta name="description" content="netch has been discontinued and is being recreated as NetchLang 2. Coming soon." />
+<link id="theme-favicon" rel="icon" href="assets/logo-dark.png" />
+<script>document.documentElement.dataset.theme = localStorage.getItem('netch-theme') || 'dark';</script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="notice-banner">
+  <div class="wrap">
+    ⚠ netch has been discontinued. It's being recreated as NetchLang 2 — <a href="why.html">read why</a>.
+  </div>
+</div>
+
+<div class="wrap">
+  <nav>
+    <a href="#" class="brand">
+      <img src="assets/logo-light.png" alt="NetchLang logo" />
+      NetchLang 2
+    </a>
+    <div class="nav-links">
+      <a href="docs.html">Docs</a>
+      <a href="#showcase">See the code</a>
+      <a href="#features">Why netch</a>
+      <a href="why.html">Why? / Learn more</a>
+      <a href="https://discord.gg/qxUgVgeZNE" target="_blank" rel="noopener">Discord</a>
+      <button class="theme-toggle" type="button" data-theme-toggle>Light mode</button>
+    </div>
+  </nav>
+</div>
+
+<header class="hero">
+  <div class="wrap hero-inner">
+    <div class="hero-text">
+      <span class="eyebrow">coming soon</span>
+      <h1 class="headline">
+        NetchLang 2
+        <span class="underline-wrap">is
+          <svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M2 15 C 35 4, 70 18, 105 9 S 165 3, 197 11" stroke="var(--lime)" stroke-width="7" fill="none" stroke-linecap="round"/>
+          </svg>
+        </span>
+        coming soon.
+      </h1>
+      <p class="subhead">
+        netch has been discontinued and shut down. It's being rebuilt from the ground up as NetchLang 2 —
+        still the same goal: the easiest and best coding language on earth.
+      </p>
+
+      <div class="cta-row" style="margin-top:14px">
+        <a class="btn btn-primary" href="why.html">Why? / Learn more</a>
+        <a class="btn btn-secondary" href="https://discord.gg/qxUgVgeZNE" target="_blank" rel="noopener">Join the Discord</a>
+      </div>
+    </div>
+    <div class="hero-logo">
+      <img src="assets/logo-light.png" alt="NetchLang hand-drawn logo mark" />
+    </div>
+  </div>
+</header>
+
+<section class="showcase" id="showcase">
+  <div class="wrap">
+    <div class="editor">
+      <div class="editor-bar">
+        <span></span><span></span><span></span>
+        <span class="editor-filename">dashboard.netch</span>
+      </div>
+      <pre><span class="tok-tag">&lt;using.netch&gt;</span>
+<span class="tok-tag">&lt;window.using&gt;</span>
+
+<span class="tok-dotted">window.title</span>(<span class="tok-string">"netch dashboard"</span>)
+<span class="tok-dotted">window.theme</span>(<span class="tok-string">"dark"</span>)
+
+<span class="tok-dotted">window.text.heading</span> = <span class="tok-string">"Hello, John"</span>
+<span class="tok-dotted">text.heading.fontsize</span>(<span class="tok-number">22</span>)
+
+<span class="tok-dotted">window.button.save</span> = <span class="tok-keyword">action</span> <span class="tok-keyword">run</span>(save_notes)
+<span class="tok-dotted">button.save.round</span>(<span class="tok-number">10</span>)
+<span class="tok-dotted">button.save.color</span> = <span class="tok-string">"#a3e635"</span>
+
+<span class="tok-keyword">while</span> true:
+    <span class="tok-keyword">if</span> button.clicked(save):
+        <span class="tok-keyword">print</span>(<span class="tok-string">"saved!"</span>)</pre>
+    </div>
+  </div>
+</section>
+
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="features-head">
+      <h2>Built so your first language isn't a dead end.</h2>
+      <p>Most beginner languages are a toy you eventually abandon. netch is designed to be the one language you never have to leave.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="num">01</div>
+        <h3>Reads like English</h3>
+        <p>No semicolons, no cryptic symbols. If you can read plain instructions, you can read netch — and it warns you before it lets a mistake crash your program.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">02</div>
+        <h3>Grows with you</h3>
+        <p>The same simple syntax builds real desktop apps, Discord bots, and AI-powered tools — not just console scripts you'll outgrow.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">03</div>
+        <h3>Rebuilding as NetchLang 2</h3>
+        <p>netch 1 has been discontinued. NetchLang 2 is being built from the ground up — see the <a href="why.html">Why? page</a> for the full story.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="cta-band">
+    <h2>NetchLang 2 is coming soon.</h2>
+    <a class="btn btn-primary" href="why.html">Why? / Learn more</a>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-inner">
+      <a href="#" class="brand"><img src="assets/logo-light.png" alt="NetchLang logo" /> NetchLang 2</a>
+      <div class="footer-links">
+        <a href="why.html">Why?</a>
+        <a href="https://discord.gg/qxUgVgeZNE" target="_blank" rel="noopener">Discord</a>
+      </div>
+    </div>
+    <div class="footer-note">netch has been discontinued and shut down — NetchLang 2 is coming soon.</div>
+  </div>
+</footer>
+
+<script src="theme.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

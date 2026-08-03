@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NetchLang 2 docs — syntax reference (netch 1, discontinued)</title>
+<meta name="description" content="netch has been discontinued and is being recreated as NetchLang 2. This reference describes the original netch 1 syntax." />
+<link id="theme-favicon" rel="icon" href="assets/logo-dark.png" />
+<script>document.documentElement.dataset.theme = localStorage.getItem('netch-theme') || 'dark';</script>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body>
+
+<div class="notice-banner">
+  <div class="wrap">
+    ⚠ netch has been discontinued. It's being recreated as NetchLang 2 — <a href="why.html">read why</a>.
+  </div>
+</div>
+
+<div class="wrap">
+  <nav>
+    <a href="index.html" class="brand">
+      <img src="assets/logo-light.png" alt="netch logo" />
+      NetchLang 2
+    </a>
+    <div class="nav-links">
+      <a href="docs.html">Docs</a>
+      <a href="index.html#features">Why netch</a>
+      <a href="why.html">Why? / Learn more</a>
+      <a href="https://discord.gg/qxUgVgeZNE" target="_blank" rel="noopener">Discord</a>
+      <button class="theme-toggle" type="button" data-theme-toggle>Light mode</button>
+    </div>
+  </nav>
+</div>
+
+<header class="docs-hero">
+  <div class="wrap">
+    <span class="eyebrow">docs — netch 1 (discontinued)</span>
+    <h1>Everything you need to actually use netch.</h1>
+    <p class="subhead">This reference covers the original netch (netch 1), which has been discontinued. NetchLang 2 is coming soon — the syntax below may change. Keep this page open in the meantime, the full reference below is searchable.</p>
+  </div>
+</header>
+
+<div class="wrap docs-layout">
+
+  <aside class="docs-nav">
+    <div class="docs-nav-label">On this page</div>
+    <a href="#install">Install netch 1</a>
+    <a href="#first-program">Your first program</a>
+    <a href="#windows-apps">Building a window app</a>
+    <a href="#calculator">Calculator example</a>
+    <a href="#reference">Full reference</a>
+    <a href="https://discord.gg/qxUgVgeZNE" target="_blank" rel="noopener">Get help on Discord →</a>
+  </aside>
+
+  <main class="docs-content">
+
+    <section id="install">
+      <h2>Install netch 1</h2>
+      <p>
+        netch 1 is discontinued and unsupported — downloads aren't offered directly from this page anymore.
+        If you still want it, there's a warned download available on the
+        <a href="why.html">Why? page</a>. NetchLang 2 is coming soon and will be the actively developed version.
+      </p>
+    </section>
+
+    <section id="first-program">
+      <h2>Your first program</h2>
+      <p>Every netch file starts with one required line, similar to how HTML starts with <code>&lt;!DOCTYPE html&gt;</code>:</p>
+      <pre><code>&lt;using.netch&gt;
+
+print("hello world")</code></pre>
+      <p>Save that as <code>hello.netch</code> and run it:</p>
+      <pre><code>netch hello.netch</code></pre>
+      <p>Variables don't need quotes, even for text:</p>
+      <pre><code>name = jake
+print(name)</code></pre>
+      <p>And functions read like plain instructions:</p>
+      <pre><code>function greet():
+    print("hey there!")
+
+run(greet)</code></pre>
+    </section>
+
+    <section id="windows-apps">
+      <h2>Building a window app</h2>
+      <p>Add a second header line to unlock real desktop apps — buttons, text boxes, images, and more:</p>
+      <pre><code>&lt;using.netch&gt;
+&lt;window.using&gt;
+
+window.title("My First App")
+window.size(400, 300)
+window.theme("dark")
+
+window.button.save = action print("saved!")
+button.save.round(10)</code></pre>
+      <p>Want a full working example? Here's a notepad — type in the box, click Save, click Open later and your text comes back:</p>
+      <pre><code>&lt;using.netch&gt;
+&lt;window.using&gt;
+
+window.title("My Notepad")
+window.textbox.editor
+
+window.button.save
+window.button.open
+
+while true:
+    if button.clicked(save):
+        write(editor, "notes.txt")
+    if button.clicked(open):
+        read("notes.txt", editor)</code></pre>
+      <p>Want to build this visually instead of typing coordinates by hand? Use <strong>netch builder</strong> — drag widgets onto a canvas and it writes the code for you.</p>
+    </section>
+
+    <section id="calculator">
+      <h2>Building a real calculator</h2>
+      <p>A genuine working calculator — digit buttons, +, −, ×, ÷, and equals. This is a good one to study since it shows off functions with parameters, <code>run(function(arg))</code>, and reading/updating a shared display variable.</p>
+      <pre><code>&lt;using.netch&gt;
+&lt;window.using&gt;
+
+window.title("Calculator")
+window.size(240, 320)
+
+display = "0"
+first_number = 0
+pending_op = ""
+
+window.text.screen = display
+text.screen.position(20, 20)
+text.screen.fontsize(28)
+
+function refresh():
+    window.text.screen = display
+
+function press_digit(d):
+    if display == "0":
+        display = d
+    else:
+        display = display + d
+    run(refresh)
+
+function press_op(o):
+    first_number = number(display)
+    pending_op = o
+    display = "0"
+    run(refresh)
+
+function press_equals():
+    second_number = number(display)
+    if pending_op == "/":
+        if second_number == 0:
+            display = "Error"
+            pending_op = ""
+            run(refresh)
+    if pending_op == "+":
+        result = first_number + second_number
+        display = result
+    if pending_op == "-":
+        result = first_number - second_number
+        display = result
+    if pending_op == "*":
+        result = first_number * second_number
+        display = result
+    if pending_op == "/":
+        if second_number != 0:
+            result = first_number / second_number
+            display = result
+    pending_op = ""
+    run(refresh)
+
+function press_clear():
+    display = "0"
+    first_number = 0
+    pending_op = ""
+    run(refresh)
+
+window.button.b7 = action run(press_digit(7))
+button.b7.position(20, 70)
+button.b7.size(45, 45)
+
+window.button.badd = action run(press_op(+))
+button.badd.position(170, 220)
+button.badd.size(45, 45)
+button.badd.color = "#3a3b44"
+
+window.button.beq = action run(press_equals)
+button.beq.position(20, 270)
+button.beq.size(195, 45)
+button.beq.color = "#a3e635"
+
+' ... repeat the same pattern for buttons 0-9, subtract, multiply, divide, and clear</code></pre>
+      <p class="docs-muted">
+        The full file (all 20 buttons wired up) is
+        <a href="downloads/calculator.netch" download>available to download here</a> — this snippet is trimmed so
+        the pattern is easy to follow rather than showing every near-identical button.
+      </p>
+    </section>
+
+    <section id="reference">
+      <h2>Full syntax reference</h2>
+      <p>Every keyword netch currently supports. Search for anything you forget.</p>
+
+      <input id="ref-search" type="text" placeholder="Search... try 'button', 'list', 'loop', 'theme'" />
+      <div id="ref-results"></div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-inner">
+      <a href="index.html" class="brand"><img src="assets/logo-light.png" alt="NetchLang logo" /> NetchLang 2</a>
+      <div class="footer-links">
+        <a href="why.html">Why?</a>
+        <a href="https://discord.gg/qxUgVgeZNE" target="_blank" rel="noopener">Discord</a>
+      </div>
+    </div>
+    <div class="footer-note">netch has been discontinued and shut down — NetchLang 2 is coming soon.</div>
+  </div>
+</footer>
+
+<script src="theme.js"></script>
+<script src="docs.js"></script>
+</body>
+</html>
