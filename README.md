@@ -1,18 +1,27 @@
-# An Aerotion Production, Netch Coding
+# Netch Coding 🌐
+### The easiest and best coding language on earth
+*An Aerotion Production*
 
-# The easiest and best coding language on earth! 
-we listen to the community btw :)
+---
 
-Our goal is to make netch the easiest ever language
-This is netch 2 Netch 1 has been discontinued, visit the official website you can find the netch 1 discontinued version in the learn more page, https://netchcodelang.github.io/netchcodinglang/index.html#
-Show off your projects and talk with the community in our reddit https://www.reddit.com/r/netchcoding2/?screen_view_count=3&ext-referrer=DIRECT
+## What is Netch?
+Netch is a beginner-friendly programming language designed to be simpler than Python, while still being powerful enough to grow with you. We listen to our community and build what YOU want.
 
-DISCORD SERVER WILL BE DISCONTINUED SHORTLY.
+## ⚠️ Netch 1 Notice
+Netch 1 has been discontinued. You can still find the old version on the [official website](https://netchcodelang.github.io/netchcodinglang/index.html#) under the "Learn More" page.
 
-Join the reddit to get notified of updates and please report bugs in the reddit so we can fix them!
+**Netch 2 is a fresh start — same vision, better everything.**
 
-CREDITS!
+## 🌍 Community
+Join our Reddit to stay updated, show off your projects, report bugs, and chat with other netch coders!
 
-cutestcookie9@gmail.com (ORIGINAL OWNER AND FOUNDER OF NETCH he is my friend btw)
-me fineed99@gmail.com (NEW OWNER OF NETCH AND FOUNDER OF AEROTION PRODUCTIONS)
+👉 [r/netchcoding2](https://www.reddit.com/r/netchcoding2/)
 
+> ⚠️ The Discord server will be discontinued shortly. Move to Reddit!
+
+## 🐛 Bug Reports
+Found a bug? Post it on the Reddit and we'll get it fixed!
+
+## 👥 Credits
+- **cutestcookie9** — Original owner & founder of Netch (cutestcookie9@gmail.com)
+- **fineed99** — New owner of Netch & founder of Aerotion Productions (fineed99@gmail.com)
