@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Why? — NetchLang 2 (public beta test out)</title>
-<meta name="description" content="netch has been discontinued and rebuilt as NetchLang 2. Public beta test out now in GitHub releases. Here's why." />
+<title>Why? — NetchLang 2 (full public release out)</title>
+<meta name="description" content="netch has been discontinued and rebuilt as NetchLang 2. Full public release out now in GitHub releases. Here's why." />
 <link id="theme-favicon" rel="icon" href="assets/logo-dark.png" />
 <script>document.documentElement.dataset.theme = localStorage.getItem('netch-theme') || 'dark';</script>
 <link rel="stylesheet" href="style.css" />
@@ -60,7 +60,6 @@
     </a>
     <div class="nav-links">
       <a href="index.html">Home</a>
-      <a href="docs.html">Docs</a>
       <a href="https://www.reddit.com/r/netchcoding2/" target="_blank" rel="noopener">Reddit</a>
       <a href="https://github.com/netchcodelang/netchcodinglang" target="_blank" rel="noopener">GitHub</a>
       <button class="theme-toggle" type="button" data-theme-toggle>Light mode</button>
@@ -79,18 +78,18 @@
     just built better this time around.
   </p>
   <p>
-    NetchLang 2 public beta test is out in GitHub releases. Join the subreddit for the latest updates —
+    NetchLang 2 full public release out now in GitHub releases. Join the subreddit for the latest updates —
     that's where announcements get posted first.
   </p>
   <div class="cta-row">
-    <button class="btn btn-primary" id="download-beta-btn-why">⬇ Download Beta</button>
+    <button class="btn btn-primary" id="download-release-btn-why">⬇ Download</button>
     <a class="btn btn-secondary" href="https://www.reddit.com/r/netchcoding2/" target="_blank" rel="noopener">Join the Reddit</a>
     <a class="btn btn-secondary" href="trynetchcode.html">Try Netch 2 Code</a>
   </div>
 
   <div style="background: var(--bg-alt); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin: 32px 0;">
-    <div style="background: #b45309; color: white; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-weight: 600;">
-      ⚠ WARNING: This is Netch 2 code. Public beta test is out — may still have bugs!
+    <div style="background: #15803d; color: white; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-weight: 600;">
+      ℹ INFO: This is Netch 2 code. Full public release is out — try it now in GitHub releases!
     </div>
     <pre style="background: #0d1117; color: #e6edf3; padding: 16px; border-radius: 6px; overflow-x: auto; font-family: monospace; font-size: 14px; line-height: 1.5;">&lt;using.netch&gt;
 &lt;window.using&gt;
@@ -133,7 +132,7 @@ while true:
         <a href="https://github.com/netchcodelang/netchcodinglang" target="_blank" rel="noopener">GitHub</a>
       </div>
     </div>
-    <div class="footer-note">netch has been discontinued and shut down — NetchLang 2 public beta test is out in GitHub releases.</div>
+    <div class="footer-note">netch has been discontinued and shut down — NetchLang 2 full public release out now in GitHub releases.</div>
   </div>
 </footer>
 
@@ -143,7 +142,7 @@ while true:
     <p>
       You're about to download <strong>netch 1</strong> — the original version, which has been
       discontinued and shut down. It won't receive any more updates, fixes, or support.
-      NetchLang 2 (public beta test out now in GitHub releases) is the actively developed replacement.
+      NetchLang 2 (full public release out now in GitHub releases) is the actively developed replacement.
     </p>
     <div class="warn-modal-actions">
       <button class="btn btn-secondary" id="warn-cancel-btn">Cancel</button>
@@ -152,17 +151,15 @@ while true:
   </div>
 </div>
 
-<div class="warn-modal-overlay" id="beta-modal-overlay">
+<div class="warn-modal-overlay" id="release-modal-overlay">
   <div class="warn-modal">
-    <h3>⚠ Alpha Beta Test — May Contain Bugs</h3>
+    <h3>Heads up</h3>
     <p>
-      You're about to download <strong>NetchLang 2 public beta test</strong>. This is an early
-      alpha/beta release and may contain bugs, incomplete features, or unexpected behavior.
-      Use at your own risk.
+      You're about to visit the <strong>NetchLang 2 releases</strong> page on GitHub to download the full public release.
     </p>
     <div class="warn-modal-actions">
-      <button class="btn btn-secondary" id="beta-cancel-btn">Cancel</button>
-      <a class="btn btn-primary" id="beta-continue-btn" href="https://github.com/netchcodelang/netchcodinglang/releases" target="_blank" rel="noopener">Continue to GitHub Releases</a>
+      <button class="btn btn-secondary" id="release-cancel-btn">Cancel</button>
+      <a class="btn btn-primary" id="release-continue-btn" href="https://github.com/netchcodelang/netchcodinglang/releases" target="_blank" rel="noopener">Continue to GitHub Releases</a>
     </div>
   </div>
 </div>
@@ -183,18 +180,18 @@ while true:
     if (e.target === oldOverlay) oldOverlay.classList.remove('active');
   });
 
-  const betaOverlay = document.getElementById('beta-modal-overlay');
-  document.getElementById('download-beta-btn-why').addEventListener('click', () => {
-    betaOverlay.classList.add('active');
+  const releaseOverlay = document.getElementById('release-modal-overlay');
+  document.getElementById('download-release-btn-why').addEventListener('click', () => {
+    releaseOverlay.classList.add('active');
   });
-  document.getElementById('beta-cancel-btn').addEventListener('click', () => {
-    betaOverlay.classList.remove('active');
+  document.getElementById('release-cancel-btn').addEventListener('click', () => {
+    releaseOverlay.classList.remove('active');
   });
-  document.getElementById('beta-continue-btn').addEventListener('click', () => {
-    betaOverlay.classList.remove('active');
+  document.getElementById('release-continue-btn').addEventListener('click', () => {
+    releaseOverlay.classList.remove('active');
   });
-  betaOverlay.addEventListener('click', (e) => {
-    if (e.target === betaOverlay) betaOverlay.classList.remove('active');
+  releaseOverlay.addEventListener('click', (e) => {
+    if (e.target === releaseOverlay) releaseOverlay.classList.remove('active');
   });
 </script>
 </body>
