@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Try Netch 2</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    background: linear-gradient(90deg, #58a6ff, #79c0ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    color: #8b949e;
+    margin-bottom: 32px;
+    font-size: 1rem;
+  }
+
+  .dashboard {
+    width: 100%;
+    max-width: 960px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #30363d;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  /* LEFT - editor */
+  .editor-panel {
+    background: #161b22;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-header {
+    background: #21262d;
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    color: #8b949e;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #30363d;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-red { background: #ff5f57; }
+  .dot-yellow { background: #febc2e; }
+  .dot-green { background: #28c840; }
+
+  textarea {
+    flex: 1;
+    background: #0d1117;
+    color: #e6edf3;
+    border: none;
+    outline: none;
+    padding: 20px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    resize: none;
+    min-height: 340px;
+    tab-size: 4;
+  }
+
+  textarea::placeholder { color: #484f58; }
+
+  .editor-footer {
+    background: #161b22;
+    padding: 12px 16px;
+    display: flex;
+    gap: 10px;
+    border-top: 1px solid #30363d;
+  }
+
+  button {
+    padding: 8px 20px;
+    border-radius: 6px;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-run {
+    background: #238636;
+    color: #fff;
+    flex: 1;
+  }
+  .btn-run:hover { background: #2ea043; }
+
+  .btn-clear {
+    background: #21262d;
+    color: #8b949e;
+    border: 1px solid #30363d;
+  }
+  .btn-clear:hover { background: #30363d; color: #e6edf3; }
+
+  /* RIGHT - output / preview */
+  .output-panel {
+    background: #0d1117;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #30363d;
+  }
+
+  .output-body {
+    flex: 1;
+    padding: 20px;
+    font-family: 'Consolas', monospace;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    overflow-y: auto;
+    min-height: 340px;
+  }
+
+  .output-line { color: #e6edf3; }
+  .output-line.error { color: #f85149; }
+  .output-line.info { color: #58a6ff; }
+  .output-line.warn { color: #e3b341; }
+  .output-line.success { color: #3fb950; }
+  .output-line.system { color: #8b949e; font-style: italic; }
+
+  /* window preview */
+  .window-preview {
+    margin-top: 12px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .window-titlebar {
+    background: #21262d;
+    padding: 8px 14px;
+    font-size: 0.78rem;
+    color: #8b949e;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .window-body {
+    background: #ffffff;
+    min-height: 80px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .preview-text {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+    color: #1a1a1a;
+  }
+
+  .preview-btn {
+    background: #0078d4;
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  .preview-btn:hover { background: #106ebe; }
+
+  .preview-input {
+    border: 1px solid #ccc;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'Segoe UI', sans-serif;
+    width: 200px;
+  }
+
+  /* examples */
+  .examples {
+    width: 100%;
+    max-width: 960px;
+    margin-top: 24px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .example-chip {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #8b949e;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .example-chip:hover { background: #30363d; color: #e6edf3; border-color: #58a6ff; }
+
+  .cursor { animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+</style>
+</head>
+<body>
+
+<div style="background: #b45309; color: white; padding: 12px 20px; text-align: center; font-weight: 600; margin-bottom: 20px; border-radius: 8px;">
+  ⚠ WARNING: This is Netch 2 code. Public beta test is out in GitHub releases — may still have bugs!
+</div>
+
+<h1>Try Netch 2</h1>
+<p class="subtitle">Write netch code and see it run — right here in your browser</p>
+
+<div class="dashboard">
+  <!-- Editor -->
+  <div class="editor-panel">
+    <div class="panel-header">
+      <div class="dot dot-red"></div>
+      <div class="dot dot-yellow"></div>
+      <div class="dot dot-green"></div>
+      &nbsp; editor &nbsp;·&nbsp; untitled.ntch
+    </div>
+    <textarea id="editor" spellcheck="false" placeholder="Write your netch code here..."><using.ntch>
+use window
+window.title("My First Netch App")
+
+displaytext("Welcome to Netch 2!")
+displaytext("Click the button below")
+
+button("Say Hello") action print("Hello from Netch!")
+</textarea>
+    <div class="editor-footer">
+      <button class="btn-run" onclick="runCode()">▶ Run</button>
+      <button class="btn-clear" onclick="clearAll()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Output -->
+  <div class="output-panel">
+    <div class="panel-header">
+      &nbsp; output
+    </div>
+    <div class="output-body" id="output">
+      <div class="output-line system">// Ready. Press Run to execute your code.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Example snippets -->
+<div class="examples">
+  <span style="color:#8b949e;font-size:0.8rem;align-self:center;">Examples:</span>
+  <div class="example-chip" onclick="loadExample('hello')">Hello World</div>
+  <div class="example-chip" onclick="loadExample('window')">Window App</div>
+  <div class="example-chip" onclick="loadExample('math')">Math</div>
+  <div class="example-chip" onclick="loadExample('loop')">Loop</div>
+  <div class="example-chip" onclick="loadExample('function')">Function</div>
+  <div class="example-chip" onclick="loadExample('if')">If / Else</div>
+</div>
+
+<script>
+const examples = {
+  hello: `<using.ntch>\nprint("Hello, World!")\nprint("Welcome to Netch 2!")`,
+  window: `<using.ntch>\nuse window\nwindow.title("My App")\nwindow.size(600, 400)\nwindow.theme("#f5f5f5")\n\ndisplaytext("Welcome to my Netch app!")\nbutton("Click Me") action print("You clicked the button!")`,
+  math: `<using.ntch>\nx = 10\ny = 25\nresult = x + y\nprint(result)\n\nbig = x * y\nprint(big)`,
+  loop: `<using.ntch>\nrepeat 5\n    print("Netch is awesome!")\n\nx = 0\nwhile x < 3\n    print(x)\n    x = x + 1`,
+  function: `<using.ntch>\nfunction greet\n    print("Hello from a function!")\n    print("Functions in Netch are easy!")\n\nrun(greet)\nrun(greet)`,
+  if: `<using.ntch>\nscore = 85\n\nif score > 90\n    print("Grade: A")\nelse\n    print("Grade: B")`
+};
+
+function loadExample(key) {
+  document.getElementById('editor').value = examples[key];
+  clearOutput();
+}
+
+function clearOutput() {
+  document.getElementById('output').innerHTML = '<div class="output-line system">// Ready. Press Run to execute your code.</div>';
+}
+
+function clearAll() {
+  document.getElementById('editor').value = '';
+  clearOutput();
+}
+
+function log(msg, type='output-line') {
+  const out = document.getElementById('output');
+  const div = document.createElement('div');
+  div.className = type;
+  div.textContent = msg;
+  out.appendChild(div);
+  out.scrollTop = out.scrollHeight;
+}
+
+function runCode() {
+  const code = document.getElementById('editor').value.trim();
+  const out = document.getElementById('output');
+  out.innerHTML = '';
+
+  const lines = code.split('\n');
+
+  // check header
+  const hasHeader = lines.slice(0, 5).some(l => l.trim() === '<using.ntch>');
+  if (!hasHeader) {
+    log('WARNING: Missing <using.ntch> header. Running anyway...', 'output-line warn');
+  }
+
+  // simple interpreter
+  const vars = {};
+  const funcs = {};
+  let windowOpen = false;
+  let windowTitle = 'Netch App';
+  let windowTheme = '#ffffff';
+  const windowWidgets = [];
+  const buttonActions = {};
+
+  function resolveVal(v) {
+    v = v.trim();
+    if (v.startsWith('"') && v.endsWith('"')) return v.slice(1,-1);
+    if (v === 'true') return true;
+    if (v === 'false') return false;
+    if (!isNaN(v)) return Number(v);
+    if (v in vars) return vars[v];
+    return v;
+  }
+
+  function evalExpr(expr) {
+    expr = expr.trim();
+    // string concat / math - very simple
+    const ops = ['+','-','*','/','==','!=','<=','>=','<','>'];
+    for (let op of ['==','!=','<=','>=']) {
+      if (expr.includes(op)) {
+        const [l,r] = expr.split(op).map(s=>s.trim());
+        const lv = evalExpr(l), rv = evalExpr(r);
+        if (op==='==') return lv==rv;
+        if (op==='!=') return lv!=rv;
+        if (op==='<=') return lv<=rv;
+        if (op==='>=') return lv>=rv;
+      }
+    }
+    for (let op of ['<','>']) {
+      if (expr.includes(op)) {
+        const idx = expr.indexOf(op);
+        const lv = evalExpr(expr.slice(0,idx)), rv = evalExpr(expr.slice(idx+1));
+        if (op==='<') return lv<rv;
+        if (op==='>') return lv>rv;
+      }
+    }
+    if (expr.includes('+')) {
+      const parts = expr.split('+');
+      const vals = parts.map(p => evalExpr(p.trim()));
+      return vals.reduce((a,b) => typeof a==='string'||typeof b==='string' ? String(a)+String(b) : a+b);
+    }
+    if (expr.includes('-')) {
+      const parts = expr.split('-');
+      return parts.map(p=>Number(evalExpr(p.trim()))).reduce((a,b)=>a-b);
+    }
+    if (expr.includes('*')) {
+      const parts = expr.split('*');
+      return parts.map(p=>Number(evalExpr(p.trim()))).reduce((a,b)=>a*b);
+    }
+    if (expr.includes('/')) {
+      const parts = expr.split('/');
+      return parts.map(p=>Number(evalExpr(p.trim()))).reduce((a,b)=>b===0?0:a/b);
+    }
+
+    // function calls
+    const fnMatch = expr.match(/^([a-zA-Z_.]+)\((.*)?\)$/s);
+    if (fnMatch) {
+      const fname = fnMatch[1];
+      const rawArgs = fnMatch[2] || '';
+      const args = rawArgs ? rawArgs.split(',').map(a => evalExpr(a.trim())) : [];
+      return callBuiltin(fname, args);
+    }
+
+    return resolveVal(expr);
+  }
+
+  function callBuiltin(name, args) {
+    if (name === 'print') { log('> ' + String(args[0] ?? ''), 'output-line success'); return; }
+    if (name === 'upper') return String(args[0]).toUpperCase();
+    if (name === 'lower') return String(args[0]).toLowerCase();
+    if (name === 'length') return String(args[0]).length;
+    if (name === 'random') {
+      const mn = Math.ceil(args[0]||0), mx = Math.floor(args[1]||100);
+      return Math.floor(Math.random()*(mx-mn+1))+mn;
+    }
+    if (name === 'number') return Number(args[0]||0);
+    if (name === 'window.title') { windowTitle = String(args[0]||''); updateWindowPreview(); return; }
+    if (name === 'window.size') { updateWindowPreview(); return; }
+    if (name === 'window.theme') { windowTheme = String(args[0]||'#fff'); updateWindowPreview(); return; }
+    if (name === 'displaytext') {
+      windowWidgets.push({ type: 'text', value: String(args[0]||'') });
+      updateWindowPreview(); return;
+    }
+    if (name === 'button') {
+      windowWidgets.push({ type: 'btn', label: String(args[0]||'Button') });
+      updateWindowPreview(); return;
+    }
+    if (name === 'input') {
+      windowWidgets.push({ type: 'input', name: String(args[0]||'input') });
+      updateWindowPreview(); return;
+    }
+    if (name === 'openfile') { log('> openfile("' + (args[0]||'') + '") — file ops run on desktop only', 'output-line info'); return; }
+    if (name in funcs) { runBlock(funcs[name]); return; }
+    return null;
+  }
+
+  function updateWindowPreview() {
+    if (!windowOpen) return;
+    const existing = document.getElementById('window-preview');
+    if (existing) existing.remove();
+
+    const preview = document.createElement('div');
+    preview.id = 'window-preview';
+    preview.className = 'window-preview';
+
+    const titlebar = document.createElement('div');
+    titlebar.className = 'window-titlebar';
+    titlebar.innerHTML = `<div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div>&nbsp; ${windowTitle}`;
+    preview.appendChild(titlebar);
+
+    const body = document.createElement('div');
+    body.className = 'window-body';
+    body.style.background = windowTheme;
+
+    windowWidgets.forEach(w => {
+      if (w.type === 'text') {
+        const el = document.createElement('div');
+        el.className = 'preview-text';
+        el.textContent = w.value;
+        body.appendChild(el);
+      } else if (w.type === 'btn') {
+        const el = document.createElement('button');
+        el.className = 'preview-btn';
+        el.textContent = w.label;
+        const action = buttonActions[w.label];
+        if (action) el.onclick = () => runBlock(action);
+        else el.onclick = () => log('> Button "' + w.label + '" clicked!', 'output-line success');
+        body.appendChild(el);
+      } else if (w.type === 'input') {
+        const el = document.createElement('input');
+        el.className = 'preview-input';
+        el.placeholder = w.name;
+        el.id = 'ninput_' + w.name;
+        body.appendChild(el);
+      }
+    });
+
+    preview.appendChild(body);
+    document.getElementById('output').appendChild(preview);
+  }
+
+  function runBlock(blockLines) {
+    let i = 0;
+    while (i < blockLines.length) {
+      const line = blockLines[i].trim();
+      if (!line || line === '<using.ntch>' || line.startsWith('#')) { i++; continue; }
+
+      if (line === 'use window') {
+        windowOpen = true;
+        log('// Window opened', 'output-line info');
+        updateWindowPreview();
+        i++; continue;
+      }
+
+      // function def
+      if (line.startsWith('function ')) {
+        const fname = line.slice(9).trim();
+        const body = [];
+        i++;
+        while (i < blockLines.length && (blockLines[i].startsWith('    ') || blockLines[i].startsWith('\t'))) {
+          body.push(blockLines[i]);
+          i++;
+        }
+        funcs[fname] = body;
+        continue;
+      }
+
+      // run()
+      if (/^run\((.+)\)$/.test(line)) {
+        const fname = line.match(/^run\((.+)\)$/)[1].trim();
+        if (fname in funcs) runBlock(funcs[fname]);
+        i++; continue;
+      }
+
+      // if
+      if (line.startsWith('if ')) {
+        const condPart = line.slice(3).trim();
+        const clickedMatch = condPart.match(/^button\(["']?([^"')]+)["']?\)\s+clicked$/);
+        if (clickedMatch) {
+          const btnLabel = clickedMatch[1];
+          const body = [];
+          i++;
+          while (i < blockLines.length && (blockLines[i].startsWith('    ') || blockLines[i].startsWith('\t'))) {
+            body.push(blockLines[i]);
+            i++;
+          }
+          buttonActions[btnLabel] = body;
+          updateWindowPreview();
+          continue;
+        }
+        const cond = evalExpr(condPart);
+        const body = [], elseBody = [];
+        i++;
+        let inElse = false;
+        while (i < blockLines.length) {
+          const s = blockLines[i].trim();
+          if (s === 'else') { inElse = true; i++; continue; }
+          if (blockLines[i].startsWith('    ') || blockLines[i].startsWith('\t')) {
+            (inElse ? elseBody : body).push(blockLines[i]);
+            i++;
+          } else break;
+        }
+        if (cond) runBlock(body); else runBlock(elseBody);
+        continue;
+      }
+
+      // while
+      if (line.startsWith('while ')) {
+        const condSrc = line.slice(6).trim();
+        const body = [];
+        i++;
+        while (i < blockLines.length && (blockLines[i].startsWith('    ') || blockLines[i].startsWith('\t'))) {
+          body.push(blockLines[i]); i++;
+        }
+        let count = 0;
+        while (count < 10000 && evalExpr(condSrc)) { runBlock(body); count++; }
+        if (count >= 10000) log('WARNING: Loop safety cap hit', 'output-line warn');
+        continue;
+      }
+
+      // repeat
+      if (line.startsWith('repeat ')) {
+        const n = Number(evalExpr(line.slice(7).trim())) || 0;
+        const body = [];
+        i++;
+        while (i < blockLines.length && (blockLines[i].startsWith('    ') || blockLines[i].startsWith('\t'))) {
+          body.push(blockLines[i]); i++;
+        }
+        for (let j = 0; j < n; j++) runBlock(body);
+        continue;
+      }
+
+      // button with action
+      const btnAction = line.match(/^button\(["']?([^"')]+)["']?\)\s+action\s+(.+)$/);
+      if (btnAction) {
+        const label = btnAction[1], actionSrc = btnAction[2];
+        windowWidgets.push({ type: 'btn', label });
+        buttonActions[label] = [actionSrc];
+        updateWindowPreview();
+        i++; continue;
+      }
+
+      // assignment
+      const assignMatch = line.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+)$/);
+      if (assignMatch) {
+        vars[assignMatch[1]] = evalExpr(assignMatch[2]);
+        i++; continue;
+      }
+
+      // window config
+      if (line.startsWith('window.')) {
+        evalExpr(line);
+        i++; continue;
+      }
+
+      // general expression
+      evalExpr(line);
+      i++;
+    }
+  }
+
+  try {
+    runBlock(lines);
+    if (!windowOpen) {
+      log('', 'output-line');
+      log('// Done.', 'output-line system');
+    }
+  } catch(e) {
+    log('ERROR: ' + e.message, 'output-line error');
+  }
+}
+</script>
+</body>
+</html>

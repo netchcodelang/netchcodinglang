@@ -382,3 +382,26 @@ footer {
   .cta-row .btn { justify-content: center; }
   .cta-band { padding: 36px 28px; }
 }
+
+.warn-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 200;
+}
+.warn-modal-overlay.active { display: flex; }
+.warn-modal {
+  background: var(--bg-alt);
+  border-radius: 14px;
+  padding: 28px;
+  max-width: 420px;
+  width: 90vw;
+  box-shadow: 0 30px 60px -20px rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+}
+.warn-modal h3 { font-size: 19px; margin-bottom: 12px; color: #b34700; }
+.warn-modal p { font-size: 14.5px; color: var(--muted); margin-bottom: 20px; }
+.warn-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+:root[data-theme="light"] .warn-modal h3 { color: #b34700; }

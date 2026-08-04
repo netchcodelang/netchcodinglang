@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>NetchLang 2 — coming soon</title>
-<meta name="description" content="netch has been discontinued and is being recreated as NetchLang 2. Coming soon." />
+<title>NetchLang 2 — public beta test</title>
+<meta name="description" content="netch has been discontinued and is being recreated as NetchLang 2. Public beta test is out in GitHub releases." />
 <link id="theme-favicon" rel="icon" href="assets/logo-dark.png" />
 <script>document.documentElement.dataset.theme = localStorage.getItem('netch-theme') || 'dark';</script>
 <link rel="stylesheet" href="style.css" />
@@ -37,7 +37,7 @@
 <header class="hero">
   <div class="wrap hero-inner">
     <div class="hero-text">
-      <span class="eyebrow">coming soon</span>
+      <span class="eyebrow">public beta test out now</span>
       <h1 class="headline">
         NetchLang 2
         <span class="underline-wrap">is
@@ -45,16 +45,18 @@
             <path d="M2 15 C 35 4, 70 18, 105 9 S 165 3, 197 11" stroke="var(--lime)" stroke-width="7" fill="none" stroke-linecap="round"/>
           </svg>
         </span>
-        coming soon.
+        here — public beta test.
       </h1>
       <p class="subhead">
         netch has been discontinued and shut down. It's being rebuilt from the ground up as NetchLang 2 —
-        still the same goal: the easiest and best coding language on earth.
+        still the same goal: the easiest and best coding language on earth. Public beta test is out in GitHub releases.
       </p>
 
       <div class="cta-row" style="margin-top:14px">
-        <a class="btn btn-primary" href="why.html">Why? / Learn more</a>
+        <button class="btn btn-primary" id="download-beta-btn">⬇ Download Beta</button>
+        <a class="btn btn-secondary" href="why.html">Why? / Learn more</a>
         <a class="btn btn-secondary" href="https://www.reddit.com/r/netchcoding2/" target="_blank" rel="noopener">Join the Reddit</a>
+        <a class="btn btn-secondary" href="trynetchcode.html">Try Netch 2 Code</a>
       </div>
     </div>
     <div class="hero-logo">
@@ -68,6 +70,31 @@
     <div class="features-head">
       <h2>Built so your first language isn't a dead end.</h2>
       <p>Most beginner languages are a toy you eventually abandon. netch is designed to be the one language you never have to leave.</p>
+    </div>
+
+    <div style="background: var(--bg-alt); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin: 32px 0;">
+      <div style="background: #b45309; color: white; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-weight: 600;">
+        ⚠ WARNING: This is Netch 2 code. Public beta test is out — may still have bugs!
+      </div>
+      <pre style="background: #0d1117; color: #e6edf3; padding: 16px; border-radius: 6px; overflow-x: auto; font-family: monospace; font-size: 14px; line-height: 1.5;">&lt;using.netch&gt;
+&lt;window.using&gt;
+
+window.title("netch dashboard")
+window.theme("dark")
+
+window.text.heading = "Hello, John"
+text.heading.fontsize(22)
+
+window.button.save = action run(save_notes)
+button.save.round(10)
+button.save.color = "#a3e635"
+
+while true:
+    if button.clicked(save):
+        print("saved!")</pre>
+      <div style="margin-top: 16px;">
+        <a class="btn btn-primary" href="trynetchcode.html">Try Netch 2 Code</a>
+      </div>
     </div>
     <div class="feature-grid">
       <div class="feature-card">
@@ -91,8 +118,8 @@
 
 <div class="wrap">
   <div class="cta-band">
-    <h2>NetchLang 2 is coming soon.</h2>
-    <a class="btn btn-primary" href="why.html">Why? / Learn more</a>
+    <h2>NetchLang 2 public beta test is out in GitHub releases.</h2>
+    <button class="btn btn-primary" id="download-beta-btn-2">⬇ Download Beta</button>
   </div>
 </div>
 
@@ -106,11 +133,38 @@
         <a href="https://github.com/netchcodelang/netchcodinglang" target="_blank" rel="noopener">GitHub</a>
       </div>
     </div>
-    <div class="footer-note">netch has been discontinued and shut down — NetchLang 2 is coming soon.</div>
+    <div class="footer-note">netch has been discontinued and shut down — NetchLang 2 public beta test is out in GitHub releases.</div>
   </div>
 </footer>
 
+<div class="warn-modal-overlay" id="warn-modal-overlay">
+  <div class="warn-modal">
+    <h3>⚠ Alpha Beta Test — May Contain Bugs</h3>
+    <p>
+      You're about to download <strong>NetchLang 2 public beta test</strong>. This is an early
+      alpha/beta release and may contain bugs, incomplete features, or unexpected behavior.
+      Use at your own risk.
+    </p>
+    <div class="warn-modal-actions">
+      <button class="btn btn-secondary" id="warn-cancel-btn">Cancel</button>
+      <a class="btn btn-primary" id="warn-continue-btn" href="https://github.com/netchcodelang/netchcodinglang/releases" target="_blank" rel="noopener">Continue to GitHub Releases</a>
+    </div>
+  </div>
+</div>
+
 <script src="theme.js"></script>
 <script src="script.js"></script>
+<script>
+  const overlay = document.getElementById('warn-modal-overlay');
+  const showModal = () => overlay.classList.add('active');
+  const hideModal = () => overlay.classList.remove('active');
+
+  document.getElementById('download-beta-btn')?.addEventListener('click', showModal);
+  document.getElementById('download-beta-btn-2')?.addEventListener('click', showModal);
+  document.getElementById('warn-cancel-btn').addEventListener('click', hideModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) hideModal();
+  });
+</script>
 </body>
 </html>
