@@ -1,26 +1,18 @@
-# netch website
+# An Aerotion Production, Netch Coding
 
-Plain HTML/CSS/JS — no build step, no dependencies. Just static files.
+# The easiest and best coding language on earth! 
+we listen to the community btw :)
 
-## Files
-- `index.html` — the whole site
-- `style.css` — styling
-- `script.js` — one small scroll animation for the feature cards
-- `assets/logo.png` — the netch logo (transparent background)
+Our goal is to make netch the easiest ever language
+This is netch 2 Netch 1 has been discontinued, visit the official website you can find the netch 1 discontinued version in the learn more page, https://netchcodelang.github.io/netchcodinglang/index.html#
+Show off your projects and talk with the community in our reddit https://www.reddit.com/r/netchcoding2/?screen_view_count=3&ext-referrer=DIRECT
 
-## How to upload it
+DISCORD SERVER WILL BE DISCONTINUED SHORTLY.
 
-Any static host works. A few easy options:
+Join the reddit to get notified of updates and please report bugs in the reddit so we can fix them!
 
-**Netlify / Vercel (drag and drop)**
-1. Go to netlify.com or vercel.com, sign up/log in
-2. Drag this whole folder onto the dashboard
-3. Done — you get a live URL immediately
+CREDITS!
 
-**GitHub Pages (since you already have GitHub)**
-1. Create a new repo (or use a folder in an existing one) and upload these files
-2. Go to the repo's Settings → Pages
-3. Set the source branch to `main` (or wherever you uploaded them)
-4. Your site goes live at `https://<username>.github.io/<repo-name>`
+cutestcookie9@gmail.com (ORIGINAL OWNER AND FOUNDER OF NETCH he is my friend btw)
+me fineed99@gmail.com (NEW OWNER OF NETCH AND FOUNDER OF AEROTION PRODUCTIONS)
 
-That's it — just upload the folder as-is, nothing needs building or installing.
