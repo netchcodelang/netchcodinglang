@@ -86,8 +86,8 @@ echo.
 echo ================================================
 echo   Something went wrong during setup.
 echo.
-echo   Please report this in the netch Discord server,
-echo   or DM itz_night_fall on Discord for help.
+echo   Please report this on the netch Reddit:
+echo   https://www.reddit.com/r/netchcoding2/
 echo ================================================
 pause
 exit /b

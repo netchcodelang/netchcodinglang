@@ -63,6 +63,31 @@ def log_commit_date(install_dir):
         print("netch will still work, it just won't be able to auto-detect updates until you reinstall.")
 
 
+def install_dashboard_example(install_dir):
+    """Adds the discontinued netch dashboard sample with the old installer."""
+    example_path = os.path.join(install_dir, "dashboard.netch")
+    example = '''<using.netch>
+<window.using>
+
+window.title("netch dashboard")
+window.theme("dark")
+
+window.text.heading = "Hello, John"
+text.heading.fontsize(22)
+
+window.button.save = action run(save_notes)
+button.save.round(10)
+button.save.color = "#a3e635"
+
+while true:
+    if button.clicked(save):
+        print("saved!")
+'''
+    with open(example_path, "w", encoding="utf-8") as f:
+        f.write(example)
+    print("Added dashboard.netch example")
+
+
 def install_windows():
     if not is_admin():
         print("Please re-run this as Administrator (needed to edit PATH and file associations).")
@@ -80,6 +105,7 @@ def install_windows():
         return
 
     log_commit_date(install_dir)
+    install_dashboard_example(install_dir)
 
     # create the launcher .bat
     launcher_path = os.path.join(install_dir, "netch.bat")
@@ -128,6 +154,7 @@ def install_unix():
         return
 
     log_commit_date(install_dir)
+    install_dashboard_example(install_dir)
 
     # create the launcher shell script
     launcher_path = os.path.join(install_dir, "netch")
