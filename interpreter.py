@@ -953,6 +953,299 @@ def call_builtin(name, args):
     if name == 'time.now':
         import datetime; return str(datetime.datetime.now())
 
+
+    # ════════════════════════════════════════════
+    #  30+ NEW FEATURES
+    # ════════════════════════════════════════════
+
+    # ── MATH ──
+    if name == 'math.abs':    return abs(args[0]) if args else 0
+    if name == 'math.round':  return round(float(args[0]), int(args[1]) if len(args)>1 else 0) if args else 0
+    if name == 'math.floor':  return int(float(args[0])) if args else 0
+    if name == 'math.ceil':
+        import math; return math.ceil(float(args[0])) if args else 0
+    if name == 'math.sqrt':
+        import math; return math.sqrt(float(args[0])) if args else 0
+    if name == 'math.power':  return float(args[0])**float(args[1]) if len(args)>=2 else 0
+    if name == 'math.max':    return max(float(a) for a in args) if args else 0
+    if name == 'math.min':    return min(float(a) for a in args) if args else 0
+    if name == 'math.clamp':
+        val,mn,mx = float(args[0]),float(args[1]),float(args[2])
+        return max(mn, min(mx, val))
+
+    # ── STRING ──
+    if name == 'str.replace':
+        if len(args)>=3: return str(args[0]).replace(str(args[1]),str(args[2]))
+        return str(args[0]) if args else ''
+    if name == 'str.split':
+        sep = str(args[1]) if len(args)>1 else ' '
+        return str(args[0]).split(sep) if args else []
+    if name == 'str.trim':    return str(args[0]).strip() if args else ''
+    if name == 'str.starts':  return str(args[0]).startswith(str(args[1])) if len(args)>=2 else False
+    if name == 'str.ends':    return str(args[0]).endswith(str(args[1])) if len(args)>=2 else False
+    if name == 'str.repeat':  return str(args[0]) * int(args[1]) if len(args)>=2 else ''
+    if name == 'str.index':   return str(args[0]).find(str(args[1])) if len(args)>=2 else -1
+    if name == 'str.reverse': return str(args[0])[::-1] if args else ''
+    if name == 'str.count':   return str(args[0]).count(str(args[1])) if len(args)>=2 else 0
+    if name == 'str.format':
+        # str.format("Hello {}", "world") -> "Hello world"
+        template = str(args[0]) if args else ''
+        vals = [str(a) for a in args[1:]]
+        for v in vals: template = template.replace('{}', v, 1)
+        return template
+
+    # ── LISTS ──
+    if name == 'list.new':    return list(args)
+    if name == 'list.add':
+        lst = state.variables.get(str(args[0]), [])
+        if isinstance(lst, list): lst.append(args[1] if len(args)>1 else None)
+        state.variables[str(args[0])] = lst
+        return lst
+    if name == 'list.get':
+        lst = state.variables.get(str(args[0]), [])
+        idx = int(args[1]) if len(args)>1 else 0
+        return lst[idx] if isinstance(lst,list) and 0<=idx<len(lst) else None
+    if name == 'list.length':
+        lst = state.variables.get(str(args[0]), [])
+        return len(lst) if isinstance(lst,list) else 0
+    if name == 'list.remove':
+        lst = state.variables.get(str(args[0]), [])
+        idx = int(args[1]) if len(args)>1 else 0
+        if isinstance(lst,list) and 0<=idx<len(lst): lst.pop(idx)
+        state.variables[str(args[0])] = lst
+        return lst
+    if name == 'list.contains':
+        lst = state.variables.get(str(args[0]), [])
+        return (args[1] in lst) if len(args)>1 else False
+    if name == 'list.join':
+        lst = state.variables.get(str(args[0]), [])
+        sep = str(args[1]) if len(args)>1 else ', '
+        return sep.join(str(x) for x in lst) if isinstance(lst,list) else ''
+
+    # ── FILE READ/WRITE ──
+    if name == 'file.read':
+        path = str(args[0]) if args else ''
+        if not os.path.exists(path):
+            raise NetchError(f"file.read: File not found: {path}",
+                fix="Check the file path is correct.")
+        with open(path,'r',encoding='utf-8') as f: return f.read()
+    if name == 'file.write':
+        if len(args)<2:
+            raise NetchError("file.write needs a path and content",
+                fix='Example: file.write("C:/myfile.txt", "Hello!")')
+        with open(str(args[0]),'w',encoding='utf-8') as f: f.write(str(args[1]))
+        return None
+    if name == 'file.append':
+        if len(args)<2:
+            raise NetchError("file.append needs a path and content",
+                fix='Example: file.append("C:/log.txt", "new line")')
+        with open(str(args[0]),'a',encoding='utf-8') as f: f.write(str(args[1])+'\n')
+        return None
+    if name == 'file.exists': return os.path.exists(str(args[0])) if args else False
+    if name == 'file.rename':
+        if len(args)>=2: os.rename(str(args[0]),str(args[1]))
+        return None
+    if name == 'file.size':
+        path = str(args[0]) if args else ''
+        return os.path.getsize(path) if os.path.exists(path) else 0
+
+    # ── CLIPBOARD ──
+    if name == 'clipboard.copy':
+        ensure_window()
+        text = str(args[0]) if args else ''
+        state.window.clipboard_clear()
+        state.window.clipboard_append(text)
+        state.window.update()
+        return None
+    if name == 'clipboard.paste':
+        ensure_window()
+        try: return state.window.clipboard_get()
+        except: return ''
+
+    # ── DIALOGS ──
+    if name == 'dialog.info':
+        ensure_window()
+        messagebox.showinfo(str(args[0]) if args else 'Netch',
+                            str(args[1]) if len(args)>1 else '')
+        return None
+    if name == 'dialog.error':
+        ensure_window()
+        messagebox.showerror(str(args[0]) if args else 'Error',
+                             str(args[1]) if len(args)>1 else '')
+        return None
+    if name == 'dialog.warn':
+        ensure_window()
+        messagebox.showwarning(str(args[0]) if args else 'Warning',
+                               str(args[1]) if len(args)>1 else '')
+        return None
+    if name == 'dialog.ask':
+        ensure_window()
+        return messagebox.askyesno(str(args[0]) if args else 'Netch',
+                                   str(args[1]) if len(args)>1 else '')
+    if name == 'dialog.input':
+        ensure_window()
+        from tkinter import simpledialog
+        return simpledialog.askstring(str(args[0]) if args else 'Input',
+                                      str(args[1]) if len(args)>1 else 'Enter value:')
+    if name == 'dialog.file':
+        ensure_window()
+        return filedialog.askopenfilename(title=str(args[0]) if args else 'Open File')
+    if name == 'dialog.folder':
+        ensure_window()
+        return filedialog.askdirectory(title=str(args[0]) if args else 'Select Folder')
+    if name == 'dialog.save':
+        ensure_window()
+        return filedialog.asksaveasfilename(title=str(args[0]) if args else 'Save File')
+
+    # ── SYSTEM ──
+    if name == 'sys.env':
+        key = str(args[0]) if args else ''
+        return os.environ.get(key,'')
+    if name == 'sys.exit':
+        code = int(args[0]) if args else 0
+        sys.exit(code)
+    if name == 'sys.platform': return sys.platform
+    if name == 'sys.username': return os.environ.get('USERNAME', os.environ.get('USER',''))
+    if name == 'sys.homedir':  return os.path.expanduser('~')
+    if name == 'sys.cwd':      return os.getcwd()
+    if name == 'sys.desktop':  return os.path.join(os.path.expanduser('~'),'Desktop')
+
+    # ── DATE/TIME ──
+    if name == 'date.today':
+        import datetime; return str(datetime.date.today())
+    if name == 'date.year':
+        import datetime; return datetime.date.today().year
+    if name == 'date.month':
+        import datetime; return datetime.date.today().month
+    if name == 'date.day':
+        import datetime; return datetime.date.today().day
+    if name == 'time.sleep':
+        import time; time.sleep(float(args[0]) if args else 1)
+        return None
+    if name == 'time.stamp':
+        import time; return int(time.time())
+
+    # ── WINDOW EXTRAS ──
+    if name == 'window.center':
+        ensure_window()
+        state.window.update_idletasks()
+        w = state.window.winfo_width()
+        h = state.window.winfo_height()
+        sw = state.window.winfo_screenwidth()
+        sh = state.window.winfo_screenheight()
+        x = (sw - w) // 2; y = (sh - h) // 2
+        state.window.geometry(f'+{x}+{y}')
+        return None
+    if name == 'window.minimize':
+        ensure_window(); state.window.iconify(); return None
+    if name == 'window.maximize':
+        ensure_window(); state.window.state('zoomed'); return None
+    if name == 'window.icon':
+        ensure_window()
+        try: state.window.iconbitmap(str(args[0]) if args else '')
+        except: pass
+        return None
+    if name == 'window.opacity':
+        ensure_window()
+        val = float(args[0]) if args else 1.0
+        state.window.attributes('-alpha', max(0.0, min(1.0, val)))
+        return None
+    if name == 'window.resizable':
+        ensure_window()
+        v = bool(args[0]) if args else True
+        state.window.resizable(v, v)
+        return None
+    if name == 'window.always.top':
+        ensure_window()
+        state.window.attributes('-topmost', bool(args[0]) if args else True)
+        return None
+    if name == 'window.fullscreen':
+        ensure_window()
+        state.window.attributes('-fullscreen', bool(args[0]) if args else True)
+        return None
+
+    # ── UI EXTRAS ──
+    if name == 'separator':
+        ensure_window()
+        color = str(args[0]) if args else DARK_BORDER if state.dark_mode else '#cccccc'
+        tk.Frame(state.window, bg=color, height=1).pack(fill='x', padx=10, pady=6)
+        return None
+    if name == 'spacer':
+        ensure_window()
+        h = int(args[0]) if args else 10
+        tk.Frame(state.window, bg=theme_bg(), height=h).pack()
+        return None
+    if name == 'heading':
+        ensure_window()
+        text  = str(args[0]) if args else ''
+        color = str(args[1]) if len(args)>1 else theme_fg()
+        tk.Label(state.window, text=text, bg=theme_bg(), fg=color,
+                 font=(s.font_name, s.font_size+6, 'bold')).pack(pady=6, padx=10, anchor='w')
+        return None
+    if name == 'link':
+        ensure_window()
+        text = str(args[0]) if args else ''
+        url  = str(args[1]) if len(args)>1 else ''
+        import webbrowser
+        lbl  = tk.Label(state.window, text=text, bg=theme_bg(),
+                        fg='#58a6ff', font=make_font(), cursor='hand2',
+                        underline=True)
+        lbl.pack(pady=2, padx=10, anchor='w')
+        lbl.bind('<Button-1>', lambda e: webbrowser.open(url))
+        return None
+    if name == 'colorpicker':
+        ensure_window()
+        from tkinter import colorchooser
+        color = colorchooser.askcolor(title='Pick a color')
+        return color[1] if color and color[1] else ''
+    if name == 'set.font':
+        if args: s.font_name = str(args[0])
+        if len(args)>1: s.font_size = int(args[1])
+        return None
+    if name == 'clear.window':
+        ensure_window()
+        for widget in state.window.winfo_children():
+            if widget != state.widgets.get('__titlebar__'):
+                widget.destroy()
+        state.widgets = {k:v for k,v in state.widgets.items() if k=='__titlebar__'}
+        return None
+
+    # ── NETWORK EXTRAS ──
+    if name == 'url.open':
+        import webbrowser
+        webbrowser.open(str(args[0]) if args else '')
+        return None
+    if name == 'json.parse':
+        try: return json.loads(str(args[0]) if args else '{}')
+        except: raise NetchError("json.parse: Invalid JSON string",
+                    fix="Make sure the string is valid JSON.")
+    if name == 'json.make':
+        data = {}
+        i=0
+        while i+1<len(args): data[str(args[i])]=args[i+1]; i+=2
+        return json.dumps(data)
+
+    # ── VARIABLES EXTRA ──
+    if name == 'typeof':
+        v = args[0] if args else None
+        if isinstance(v,bool):  return 'bool'
+        if isinstance(v,int):   return 'number'
+        if isinstance(v,float): return 'number'
+        if isinstance(v,str):   return 'text'
+        if isinstance(v,list):  return 'list'
+        return 'unknown'
+    if name == 'tonumber':
+        try: return float(str(args[0])) if args else 0
+        except: raise NetchError(f"tonumber: Cannot convert to number: {args[0]}",
+                    fix="Make sure the value is actually a number.")
+    if name == 'totext':    return str(args[0]) if args else ''
+    if name == 'isnumber':
+        try: float(str(args[0])); return True
+        except: return False
+    if name == 'isempty':
+        v = args[0] if args else None
+        return v is None or str(v).strip() == '' or v == [] or v == {}
+
     # ── user functions ──
     if name in s.functions:
         run_block(s.functions[name]); return None
@@ -1137,6 +1430,36 @@ def run_lines(lines):
                     else: break
                 if cond: run_block(body)
                 else:    run_block(else_body)
+                continue
+
+
+            # foreach item in listvar
+            foreach_m = re.match(r'^foreach\s+(\w+)\s+in\s+(\w+)$', stripped)
+            if foreach_m:
+                item_var = foreach_m.group(1)
+                list_var = foreach_m.group(2)
+                lst = state.variables.get(list_var, [])
+                body = []; i += 1
+                while i < len(lines) and (lines[i].startswith('    ') or lines[i].startswith('	')):
+                    body.append(lines[i]); i += 1
+                if isinstance(lst, list):
+                    for item in lst:
+                        state.variables[item_var] = item
+                        run_block(body)
+                continue
+
+            # for varname from X to Y
+            for_m = re.match(r'^for\s+(\w+)\s+from\s+(.+)\s+to\s+(.+)$', stripped)
+            if for_m:
+                var_name = for_m.group(1)
+                start_v, _ = eval_expr(tokenize(for_m.group(2)), 0)
+                end_v,   _ = eval_expr(tokenize(for_m.group(3)), 0)
+                body = []; i += 1
+                while i < len(lines) and (lines[i].startswith('    ') or lines[i].startswith('	')):
+                    body.append(lines[i]); i += 1
+                for n in range(int(start_v), int(end_v) + 1):
+                    state.variables[var_name] = n
+                    run_block(body)
                 continue
 
             # while
