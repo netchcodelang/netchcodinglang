@@ -1,10 +1,47 @@
 import sys, os, re, urllib.request, urllib.parse, json, subprocess, threading
 
 # ─────────────────────────────────────────────
+#  PACKAGE SYSTEM
+# ─────────────────────────────────────────────
+
+NETCH_DIR = os.path.join(os.path.expanduser("~"), "Netch2")
+PKG_DIR   = os.path.join(NETCH_DIR, "packages")
+os.makedirs(PKG_DIR, exist_ok=True)
+
+loaded_packages = {}   # pkgname -> manifest dict
+
+def load_package(pkg_name):
+    """Load a package from ~/Netch2/packages/<pkg_name>/"""
+    pkg_folder = os.path.join(PKG_DIR, pkg_name)
+    if not os.path.isdir(pkg_folder):
+        raise NetchError(
+            f"Package '{pkg_name}' is not installed.",
+            fix=f"Run:  python netch_pkg.py install {pkg_name}"
+        )
+    manifest_path = os.path.join(pkg_folder, "manifest.json")
+    manifest = {}
+    if os.path.exists(manifest_path):
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+    loaded_packages[pkg_name] = {"folder": pkg_folder, "manifest": manifest}
+    print(f"[netch pkg] Loaded: {pkg_name} v{manifest.get('version','?')}")
+    return pkg_folder
+
+def pkg_file(pkg_name, filename):
+    """Get full path to a file inside an installed package."""
+    info = loaded_packages.get(pkg_name)
+    if not info:
+        raise NetchError(f"Package '{pkg_name}' is not loaded.",
+            fix=f"Add 'importpkg {pkg_name}' near the top of your script.")
+    return os.path.join(info["folder"], filename)
+
+# ─────────────────────────────────────────────
 #  VERSION & AUTO-UPDATER
 # ─────────────────────────────────────────────
 
 NETCH_VERSION = "2.1.0"
+NETCH_DIR    = os.path.join(os.path.expanduser("~"), "Netch2")
+PACKAGES_DIR = os.path.join(NETCH_DIR, "packages")
 GITHUB_API = "https://api.github.com/repos/netchcodelang/netchcodinglang/releases/latest"
 
 def check_for_updates():
@@ -244,6 +281,110 @@ def apply_op(op, l, r):
 
 def call_builtin(name, args):
     s = state
+
+    # ── package: importpkg ──
+    if name == 'importpkg':
+        pkg_name = str(args[0]) if args else ''
+        if not pkg_name:
+            raise NetchError("importpkg needs a package name",
+                fix='Example: importpkg customwindowtitle')
+        load_package(pkg_name)
+        return None
+
+    # ── custom window title bar (windowtitle) ──
+    if name == 'windowtitle':
+        ensure_window()
+        img_arg = str(args[0]) if args else ''
+
+        # figure out the image path
+        # could be bare filename "yourtitle.nframetchpng",
+        # or full path, or relative
+        if os.path.isabs(img_arg) or os.path.exists(img_arg):
+            img_path = img_arg
+        else:
+            # search loaded packages for the file
+            img_path = None
+            for pname, pinfo in loaded_packages.items():
+                candidate = os.path.join(pinfo["folder"], img_arg)
+                if os.path.exists(candidate):
+                    img_path = candidate; break
+            # also check current working dir
+            if not img_path:
+                cwd_candidate = os.path.join(os.getcwd(), img_arg)
+                if os.path.exists(cwd_candidate):
+                    img_path = cwd_candidate
+            if not img_path:
+                raise NetchError(
+                    f"Could not find image file: {img_arg}",
+                    fix="Make sure you renamed your PNG to end in .nframetchpng and it's in the right folder, "
+                        "or that the customwindowtitle package is installed and imported."
+                )
+
+        # hide the native title bar
+        s = state
+        s.window.overrideredirect(True)   # remove native frame
+
+        # ── drag support ──
+        drag_data = {"x": 0, "y": 0}
+        def on_drag_start(event):
+            drag_data["x"] = event.x_root - s.window.winfo_x()
+            drag_data["y"] = event.y_root - s.window.winfo_y()
+        def on_drag_move(event):
+            x = event.x_root - drag_data["x"]
+            y = event.y_root - drag_data["y"]
+            s.window.geometry(f"+{x}+{y}")
+
+        # ── title bar frame (holds the PNG) ──
+        titlebar_frame = tk.Frame(s.window, bg=theme_bg(), cursor='fleur')
+        titlebar_frame.pack(fill='x', side='top')
+        titlebar_frame.bind("<ButtonPress-1>",   on_drag_start)
+        titlebar_frame.bind("<B1-Motion>",       on_drag_move)
+
+        try:
+            # load the PNG — try PIL first for better .png support
+            try:
+                from PIL import Image, ImageTk
+                pil_img  = Image.open(img_path)
+                # scale to window width, keep aspect ratio
+                w_ratio  = s.window_width / pil_img.width
+                new_h    = int(pil_img.height * w_ratio)
+                pil_img  = pil_img.resize((s.window_width, new_h), Image.LANCZOS)
+                tk_img   = ImageTk.PhotoImage(pil_img)
+            except ImportError:
+                # fallback to tkinter PhotoImage (only supports .gif and .png natively)
+                tk_img = tk.PhotoImage(file=img_path)
+
+            img_label = tk.Label(titlebar_frame, image=tk_img,
+                                 bg=theme_bg(), cursor='fleur')
+            img_label.image = tk_img   # keep reference
+            img_label.pack(fill='x')
+            img_label.bind("<ButtonPress-1>", on_drag_start)
+            img_label.bind("<B1-Motion>",     on_drag_move)
+
+            # ── close button (X) on top right ──
+            close_btn = tk.Button(
+                titlebar_frame, text="✕",
+                bg='#c0392b', fg='white',
+                font=(s.font_name, 10, 'bold'),
+                relief='flat', bd=0, padx=8, pady=2,
+                cursor='hand2',
+                command=s.window.destroy,
+                activebackground='#e74c3c', activeforeground='white'
+            )
+            close_btn.place(relx=1.0, rely=0.0, anchor='ne')
+
+        except Exception as e:
+            raise NetchError(
+                f"Could not load title bar image: {e}",
+                fix="Make sure the file is a valid PNG and ends in .nframetchpng"
+            )
+
+        # ── content frame so widgets go below the title bar ──
+        content_frame = tk.Frame(s.window, bg=theme_bg())
+        content_frame.pack(fill='both', expand=True)
+        # redirect future widget packing into content_frame
+        s.window._netch_content = content_frame
+        return None
 
     # ── dark mode ──
     if name == 'dark':
@@ -722,6 +863,78 @@ def call_builtin(name, args):
             raise NetchError(f"run.shell failed: {ex}",
                 fix='Example: run.shell("dir") or run.shell("python myscript.py")')
 
+    # ── custom window title (frameless PNG titlebar) ──
+    if name == "windowtitle":
+        ensure_window()
+        png_file = str(args[0]) if args else ""
+        title_text = str(args[1]) if len(args) > 1 else ""
+        if not png_file.endswith(".nframetchpng") and not png_file.endswith(".png"):
+            raise NetchError(
+                f"windowtitle() expected a .nframetchpng file, got: {png_file}",
+                fix="Rename your PNG to something.nframetchpng then use: windowtitle(\"something.nframetchpng\")"
+            )
+        if not os.path.exists(png_file):
+            raise NetchError(
+                f"Custom title bar image not found: {png_file}",
+                fix="Make sure the .nframetchpng file is in the same folder as your .ntch script."
+            )
+        try:
+            # remove the default OS title bar
+            state.window.overrideredirect(True)
+            # keep window alive and visible on screen
+            state.window.lift()
+            state.window.attributes("-topmost", True)
+            state.window.after(100, lambda: state.window.attributes("-topmost", False))
+            state.window.update()
+
+            # create a custom title bar frame using the PNG
+            img = tk.PhotoImage(file=png_file)
+            title_bar = tk.Label(state.window, image=img, bg=theme_bg(), cursor="fleur")
+            title_bar.image = img  # keep reference so GC doesn't destroy it
+            title_bar.pack(side="top", fill="x")
+
+            # add title text overlay if provided
+            if title_text:
+                txt = tk.Label(title_bar, text=title_text,
+                               bg="", fg=theme_fg(),
+                               font=make_font(bold=True))
+                txt.place(x=12, y=6)
+
+            # drag support — lets user move the frameless window
+            drag = {"x": 0, "y": 0}
+            def start_drag(e):
+                drag["x"] = e.x; drag["y"] = e.y
+            def do_drag(e):
+                dx = e.x - drag["x"]; dy = e.y - drag["y"]
+                x  = state.window.winfo_x() + dx
+                y  = state.window.winfo_y() + dy
+                state.window.geometry(f"+{x}+{y}")
+            title_bar.bind("<ButtonPress-1>", start_drag)
+            title_bar.bind("<B1-Motion>",     do_drag)
+
+            # X close button — top right corner
+            # Windows-style close button
+            close_btn = tk.Button(title_bar, text="✕",
+                                  command=state.window.destroy,
+                                  bg="",
+                                  fg=theme_fg(),
+                                  relief="flat", bd=0,
+                                  padx=10, pady=4,
+                                  font=(state.font_name, 11, "bold"),
+                                  cursor="hand2",
+                                  activebackground="#e81123",
+                                  activeforeground="white")
+            close_btn.place(relx=1.0, x=-4, y=4, anchor="ne")
+            # hover effect
+            close_btn.bind("<Enter>", lambda e: close_btn.config(bg="#e81123", fg="white"))
+            close_btn.bind("<Leave>", lambda e: close_btn.config(bg="", fg=theme_fg()))
+            state.widgets["__titlebar__"] = title_bar
+            state.window.update()
+        except Exception as ex:
+            raise NetchError(f"windowtitle() failed: {ex}",
+                fix="Make sure your .nframetchpng is a valid PNG image and is in the same folder as your .ntch file.")
+        return None
+
     # ── print ──
     if name == 'print':
         print(str(args[0]) if args else ''); return None
@@ -746,6 +959,34 @@ def call_builtin(name, args):
 
     raise NetchError(f'Unknown command: {name}()',
         fix=f'Did you spell "{name}" correctly? Check the docs at github.com/netchcodelang/netchcodinglang')
+
+
+# ─────────────────────────────────────────────
+#  PACKAGE LOADER
+# ─────────────────────────────────────────────
+
+def load_package(pkg_name):
+    pkg_dir = os.path.join(PACKAGES_DIR, pkg_name)
+    if not os.path.exists(pkg_dir):
+        raise NetchError(
+            f'Package "{pkg_name}" is not installed.',
+            fix=f'Run this in your terminal: python netch_pkg.py install {pkg_name}'
+        )
+    # load package init if it exists
+    init_path = os.path.join(pkg_dir, "init.py")
+    if os.path.exists(init_path):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(pkg_name, init_path)
+        mod  = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        # register any builtins the package exports
+        if hasattr(mod, "NETCH_BUILTINS"):
+            state.variables[f"__pkg_{pkg_name}__"] = True
+            # store callables for the interpreter
+            for fn_name, fn in mod.NETCH_BUILTINS.items():
+                state.functions[f"__builtin_{fn_name}__"] = fn
+    state.variables[f"__pkg_{pkg_name}__"] = True
+    print(f"[Netch] Package loaded: {pkg_name}")
 
 # ─────────────────────────────────────────────
 #  LINE RUNNER
@@ -772,6 +1013,90 @@ def run_lines(lines):
 
             if stripped == 'use window':
                 ensure_window(); i+=1; continue
+
+            # ── controllocalapps special syntax ──
+
+            # control window
+            if stripped == 'control window':
+                i+=1; continue  # handled by package, just a marker
+
+            # end local.system.netch.controls
+            if stripped == 'end local.system.netch.controls':
+                i+=1; continue
+
+            # flag -- I_KNOW_WHAT_IM_DOING
+            if stripped.startswith('flag --'):
+                flag_name = stripped[7:].strip()
+                pkg = state.variables.get("__controllocalapps_pkg__")
+                if "__pkg_controllocalapps__" in state.variables:
+                    import sys as _sys
+                    for mod in list(_sys.modules.values()):
+                        if hasattr(mod, 'set_flag') and hasattr(mod, 'PACKAGE_NAME') and mod.PACKAGE_NAME == 'controllocalapps':
+                            mod.set_flag(flag_name)
+                            break
+                i+=1; continue
+
+            # confirmation = PRODUCTION_STATE
+            if stripped == 'confirmation = PRODUCTION_STATE':
+                if "__pkg_controllocalapps__" in state.variables:
+                    import sys as _sys
+                    for mod in list(_sys.modules.values()):
+                        if hasattr(mod, 'set_flag') and hasattr(mod, 'PACKAGE_NAME') and mod.PACKAGE_NAME == 'controllocalapps':
+                            mod.set_flag("PRODUCTION_STATE")
+                            break
+                i+=1; continue
+
+            # local.app.system set netch flag--
+            if stripped == 'local.app.system set netch flag--':
+                i+=1; continue  # marker line, flags set separately
+
+            # local.app.system app set to VARIABLE"varname"
+            local_app_var = re.match(r'^local\.app\.system app set to VARIABLE"([^"]+)"$', stripped)
+            if local_app_var:
+                varname = local_app_var.group(1)
+                if "__pkg_controllocalapps__" in state.variables:
+                    path = state.variables.get(varname, varname)
+                    import sys as _sys
+                    for mod in list(_sys.modules.values()):
+                        if hasattr(mod, 'set_app_variable') and hasattr(mod, 'PACKAGE_NAME') and mod.PACKAGE_NAME == 'controllocalapps':
+                            mod.set_app_variable(varname, str(path))
+                            break
+                i+=1; continue
+
+            # for warning "..." ignore.flag set
+            warn_match = re.match(r'^for warning "([^"]*)" ignore\.flag set$', stripped)
+            if warn_match:
+                print(f"[controllocalapps] WARNING acknowledged: {warn_match.group(1)[:80]}...")
+                if "__pkg_controllocalapps__" in state.variables:
+                    import sys as _sys
+                    for mod in list(_sys.modules.values()):
+                        if hasattr(mod, 'set_ignore_warning') and hasattr(mod, 'PACKAGE_NAME') and mod.PACKAGE_NAME == 'controllocalapps':
+                            mod.set_ignore_warning()
+                            break
+                i+=1; continue
+
+            # local.app.launch varname
+            launch_match = re.match(r'^local\.app\.launch\s+"?([^"]+)"?$', stripped)
+            if launch_match:
+                varname = launch_match.group(1)
+                toks = tokenize(f'local.app.launch("{varname}")')
+                eval_expr(toks, 0)
+                i+=1; continue
+
+            # importpkg / import all pkgs
+            if stripped == 'import all pkgs':
+                import os as _os
+                pkgs_dir = PACKAGES_DIR
+                if _os.path.exists(pkgs_dir):
+                    for _pkg in _os.listdir(pkgs_dir):
+                        _pkg_path = _os.path.join(pkgs_dir, _pkg)
+                        if _os.path.isdir(_pkg_path):
+                            try: load_package(_pkg)
+                            except: pass
+                i+=1; continue
+            if stripped.startswith('importpkg '):
+                pkg_name = stripped[10:].strip()
+                load_package(pkg_name); i+=1; continue
 
             # function def
             if stripped.startswith('function '):
