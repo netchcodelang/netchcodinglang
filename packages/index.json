@@ -1,29 +1,42 @@
 {
   "customwindowtitle": {
-    "version": "1.0.0",
-    "description": "Custom PNG window title bars for Netch 2 apps",
+    "version": "1.1.0",
+    "description": "Custom PNG window title bars with custom close/min/max button support",
     "author": "Aerotion Productions",
     "file": "customwindowtitle.ntchpkg",
     "usage": [
       "importpkg customwindowtitle",
-      "windowtitle(\"yourtitle.nframetchpng\")",
-      "windowtitle(\"yourtitle.nframetchpng\", \"My App\")"
+      "windowtitle(\"title.nframetchpng\", \"My App\")",
+      "windowtitle(\"title.nframetchpng\", \"My App\", \"close.png\", \"min.png\", \"max.png\")"
     ]
   },
   "controllocalapps": {
     "version": "1.0.0",
-    "description": "Launch and attach custom Netch title bars to any local .exe app",
+    "description": "Launch and attach custom Netch title bars to any local Windows .exe app",
     "author": "Aerotion Productions",
     "file": "controllocalapps.ntchpkg",
-    "warning": "Manipulates external app windows. Use the flag system.",
+    "warning": "Manipulates external app windows. Requires the flag system.",
     "usage": [
       "importpkg controllocalapps",
       "flag -- I_KNOW_WHAT_IM_DOING",
       "confirmation = PRODUCTION_STATE",
-      "for warning \"THIS MAY INTERFERE AND BREAK APPS\" ignore.flag set",
+      "for warning \"...\" ignore.flag set",
       "app = c:/yourapp.exe",
       "local.app.system app set to VARIABLE\"app\"",
       "local.app.launch app"
+    ]
+  },
+  "ainetchintegration": {
+    "version": "1.0.0",
+    "description": "Integrate AI into your Netch apps — chat, generate text, answer questions",
+    "author": "Aerotion Productions",
+    "file": "ainetchintegration.ntchpkg",
+    "usage": [
+      "importpkg ainetchintegration",
+      "ai.key(\"your-anthropic-api-key\")",
+      "ai.system(\"You are a helpful assistant\")",
+      "response = ai.ask(\"What is Netch?\")",
+      "reply = ai.chat(\"Hello!\")"
     ]
   }
 }
