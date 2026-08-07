@@ -212,3 +212,81 @@ echo  Community:  reddit.com/r/netchcoding2
 echo  GitHub:     github.com/netchcodelang/netchcodinglang
 echo.
 exit /b
+
+:: ── netch compiletoexe ──
+if /i "%1"=="compiletoexe" (
+    if "%2"=="" (
+        echo.
+        echo  [Netch] Usage: netch compiletoexe yourfile.ntch
+        echo          Usage: netch compiletoexe yourfile.ntch --name "My App"
+        echo          Usage: netch compiletoexe yourfile.ntch --output C:/releases
+        echo          Usage: netch compiletoexe yourfile.ntch --icon myapp.ico
+        echo          Usage: netch compiletoexe yourfile.ntch --folder
+        echo.
+        exit /b 1
+    )
+    python "%NETCH_DIR%\netch_compile.py" %2 %3 %4 %5 %6 %7
+    exit /b
+)
+
+:: ── netch pkg update (auto-update all packages) ──
+if /i "%1"=="pkg" if /i "%2"=="update" (
+    echo.
+    echo  [Netch] Checking for package updates...
+    python -c "
+import urllib.request, json, os, zipfile, shutil
+
+NETCH_DIR    = os.path.join(os.path.expanduser('~'), 'Netch2')
+PACKAGES_DIR = os.path.join(NETCH_DIR, 'packages')
+INDEX_URL    = 'https://raw.githubusercontent.com/netchcodelang/netchcodinglang/main/packages/index.json'
+PKG_BASE     = 'https://raw.githubusercontent.com/netchcodelang/netchcodinglang/main/packages/'
+
+try:
+    req = urllib.request.Request(INDEX_URL, headers={'User-Agent':'netch2'})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        index = json.loads(r.read())
+except Exception as e:
+    print(f'  Could not reach package registry: {e}'); exit()
+
+updated = 0
+for pkg_name, pkg_info in index.items():
+    pkg_dir  = os.path.join(PACKAGES_DIR, pkg_name)
+    meta_path= os.path.join(pkg_dir, 'package.json')
+    if not os.path.exists(meta_path): continue
+    with open(meta_path) as f: local = json.load(f)
+    local_v  = local.get('version','0.0.0')
+    remote_v = pkg_info.get('version','0.0.0')
+    if local_v != remote_v:
+        print(f'  Updating {pkg_name}: v{local_v} -> v{remote_v}')
+        url  = PKG_BASE + pkg_info['file']
+        dest = os.path.join(pkg_dir, pkg_info['file'])
+        urllib.request.urlretrieve(url, dest)
+        try:
+            with zipfile.ZipFile(dest,'r') as z: z.extractall(pkg_dir)
+            os.remove(dest)
+        except: pass
+        local['version'] = remote_v
+        with open(meta_path,'w') as f: json.dump(local,f,indent=2)
+        updated += 1
+    else:
+        print(f'  {pkg_name}: up to date (v{local_v})')
+
+print(f'\n  {updated} package(s) updated.')
+"
+    echo.
+    exit /b
+)
+
+:: ── netch android (basic APK via buildozer) ──
+if /i "%1"=="android" (
+    if "%2"=="" (
+        echo.
+        echo  [Netch] Usage: netch android yourfile.ntch
+        echo  [Netch] Requires: buildozer (pip install buildozer)
+        echo  [Netch] Note: Android build works on Linux/WSL only.
+        echo.
+        exit /b 1
+    )
+    python "%NETCH_DIR%\netch_android.py" %2
+    exit /b
+)

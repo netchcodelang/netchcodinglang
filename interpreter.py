@@ -1246,6 +1246,370 @@ def call_builtin(name, args):
         v = args[0] if args else None
         return v is None or str(v).strip() == '' or v == [] or v == {}
 
+
+
+    # ════════════════════════════════════════════
+    #  CANVAS API
+    # ════════════════════════════════════════════
+    if name == 'canvas.new':
+        ensure_window()
+        key = str(args[0]) if args else 'canvas'
+        w   = int(args[1]) if len(args)>1 else 400
+        h   = int(args[2]) if len(args)>2 else 300
+        bg  = str(args[3]) if len(args)>3 else theme_bg()
+        c   = tk.Canvas(s.window, width=w, height=h, bg=bg,
+                        highlightthickness=0)
+        c.pack(pady=4, padx=10)
+        s.widgets[key] = c
+        return None
+
+    if name == 'canvas.line':
+        key = str(args[0]) if args else 'canvas'
+        c   = s.widgets.get(key)
+        if c and len(args)>=5:
+            color = str(args[5]) if len(args)>5 else theme_fg()
+            width = int(args[6]) if len(args)>6 else 2
+            c.create_line(float(args[1]),float(args[2]),
+                          float(args[3]),float(args[4]),
+                          fill=color, width=width)
+        return None
+
+    if name == 'canvas.rect':
+        key = str(args[0]) if args else 'canvas'
+        c   = s.widgets.get(key)
+        if c and len(args)>=5:
+            color  = str(args[5]) if len(args)>5 else '#0078d4'
+            border = str(args[6]) if len(args)>6 else ''
+            c.create_rectangle(float(args[1]),float(args[2]),
+                               float(args[3]),float(args[4]),
+                               fill=color, outline=border)
+        return None
+
+    if name == 'canvas.circle':
+        key = str(args[0]) if args else 'canvas'
+        c   = s.widgets.get(key)
+        if c and len(args)>=4:
+            x,y,r = float(args[1]),float(args[2]),float(args[3])
+            color  = str(args[4]) if len(args)>4 else '#0078d4'
+            c.create_oval(x-r,y-r,x+r,y+r,fill=color,outline='')
+        return None
+
+    if name == 'canvas.text':
+        key = str(args[0]) if args else 'canvas'
+        c   = s.widgets.get(key)
+        if c and len(args)>=4:
+            color = str(args[4]) if len(args)>4 else theme_fg()
+            c.create_text(float(args[1]),float(args[2]),
+                          text=str(args[3]),fill=color,
+                          font=make_font())
+        return None
+
+    if name == 'canvas.image':
+        key = str(args[0]) if args else 'canvas'
+        c   = s.widgets.get(key)
+        if c and len(args)>=4:
+            img = tk.PhotoImage(file=str(args[3]))
+            c.create_image(float(args[1]),float(args[2]),image=img)
+            c.image = img
+        return None
+
+    if name == 'canvas.clear':
+        key = str(args[0]) if args else 'canvas'
+        c   = s.widgets.get(key)
+        if c: c.delete('all')
+        return None
+
+    if name == 'canvas.onclick':
+        key     = str(args[0]) if args else 'canvas'
+        fn_name = str(args[1]) if len(args)>1 else ''
+        c       = s.widgets.get(key)
+        if c and fn_name in s.functions:
+            def _click(e, fn=fn_name):
+                s.variables['canvas.x'] = e.x
+                s.variables['canvas.y'] = e.y
+                run_block(s.functions[fn])
+            c.bind('<Button-1>', _click)
+        return None
+
+    # ════════════════════════════════════════════
+    #  TEXT-TO-SPEECH
+    # ════════════════════════════════════════════
+    if name == 'tts.say':
+        text = str(args[0]) if args else ''
+        try:
+            import pyttsx3
+            engine = pyttsx3.init()
+            rate   = int(args[1]) if len(args)>1 else 175
+            engine.setProperty('rate', rate)
+            engine.say(text)
+            engine.runAndWait()
+        except ImportError:
+            raise NetchError("pyttsx3 not installed.",
+                fix="Run: pip install pyttsx3  then try again.")
+        return None
+
+    if name == 'tts.save':
+        text = str(args[0]) if args else ''
+        path = str(args[1]) if len(args)>1 else 'output.mp3'
+        try:
+            import pyttsx3
+            engine = pyttsx3.init()
+            engine.save_to_file(text, path)
+            engine.runAndWait()
+        except ImportError:
+            raise NetchError("pyttsx3 not installed.",
+                fix="Run: pip install pyttsx3  then try again.")
+        return None
+
+    # ════════════════════════════════════════════
+    #  VOICE RECOGNITION
+    # ════════════════════════════════════════════
+    if name == 'voice.listen':
+        try:
+            import speech_recognition as sr
+            r   = sr.Recognizer()
+            mic = sr.Microphone()
+            with mic as source:
+                print("[Netch] Listening...")
+                r.adjust_for_ambient_noise(source, duration=0.5)
+                audio = r.listen(source, timeout=10)
+            text = r.recognize_google(audio)
+            s.variables['voice.result'] = text
+            return text
+        except ImportError:
+            raise NetchError("SpeechRecognition not installed.",
+                fix="Run: pip install SpeechRecognition pyaudio  then try again.")
+        except Exception as e:
+            raise NetchError(f"voice.listen failed: {e}",
+                fix="Make sure your microphone is connected and working.")
+
+    if name == 'voice.listen.offline':
+        try:
+            import speech_recognition as sr
+            r   = sr.Recognizer()
+            mic = sr.Microphone()
+            with mic as source:
+                print("[Netch] Listening (offline)...")
+                audio = r.listen(source, timeout=10)
+            text = r.recognize_sphinx(audio)
+            s.variables['voice.result'] = text
+            return text
+        except ImportError:
+            raise NetchError("SpeechRecognition / PocketSphinx not installed.",
+                fix="Run: pip install SpeechRecognition pocketsphinx pyaudio")
+        except Exception as e:
+            raise NetchError(f"voice.listen.offline failed: {e}")
+
+    # ════════════════════════════════════════════
+    #  VIDEO WIDGET
+    # ════════════════════════════════════════════
+    if name == 'video.play':
+        path = str(args[0]) if args else ''
+        try:
+            import cv2
+            from PIL import Image, ImageTk
+            ensure_window()
+            cap   = cv2.VideoCapture(path)
+            label = tk.Label(s.window, bg=theme_bg())
+            label.pack(pady=4, padx=10)
+            key   = str(args[1]) if len(args)>1 else 'video'
+            s.widgets[key] = (label, cap)
+            def _play():
+                if cap.isOpened() and s.window:
+                    ret, frame = cap.read()
+                    if ret:
+                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        img   = ImageTk.PhotoImage(Image.fromarray(frame))
+                        label.config(image=img); label.image = img
+                        s.window.after(33, _play)
+                    else:
+                        cap.release()
+            _play()
+        except ImportError:
+            raise NetchError("opencv-python and Pillow are required for video.",
+                fix="Run: pip install opencv-python Pillow")
+        return None
+
+    if name == 'video.stop':
+        key = str(args[0]) if args else 'video'
+        w   = s.widgets.get(key)
+        if w and isinstance(w, tuple): w[1].release()
+        return None
+
+    # ════════════════════════════════════════════
+    #  PDF API
+    # ════════════════════════════════════════════
+    if name == 'pdf.create':
+        path  = str(args[0]) if args else 'output.pdf'
+        title = str(args[1]) if len(args)>1 else 'Netch PDF'
+        try:
+            from reportlab.pdfgen import canvas as rl_canvas
+            from reportlab.lib.pagesizes import A4
+            c = rl_canvas.Canvas(path, pagesize=A4)
+            c.setTitle(title)
+            s.variables['__pdf__']    = c
+            s.variables['__pdf_y__']  = 750
+            s.variables['__pdf_path__'] = path
+            print(f"[Netch] PDF started: {path}")
+        except ImportError:
+            raise NetchError("reportlab not installed.",
+                fix="Run: pip install reportlab  then try again.")
+        return None
+
+    if name == 'pdf.text':
+        text  = str(args[0]) if args else ''
+        size  = int(args[1]) if len(args)>1 else 12
+        color = str(args[2]) if len(args)>2 else '#000000'
+        c     = s.variables.get('__pdf__')
+        if c:
+            c.setFontSize(size)
+            y = float(s.variables.get('__pdf_y__', 750))
+            c.drawString(50, y, text)
+            s.variables['__pdf_y__'] = y - size - 6
+        return None
+
+    if name == 'pdf.heading':
+        text = str(args[0]) if args else ''
+        c    = s.variables.get('__pdf__')
+        if c:
+            c.setFontSize(20)
+            y = float(s.variables.get('__pdf_y__', 750))
+            c.drawString(50, y, text)
+            s.variables['__pdf_y__'] = y - 28
+        return None
+
+    if name == 'pdf.newpage':
+        c = s.variables.get('__pdf__')
+        if c:
+            c.showPage()
+            s.variables['__pdf_y__'] = 750
+        return None
+
+    if name == 'pdf.save':
+        c    = s.variables.get('__pdf__')
+        path = s.variables.get('__pdf_path__', 'output.pdf')
+        if c:
+            c.save()
+            print(f"[Netch] PDF saved: {path}")
+        return None
+
+    # ════════════════════════════════════════════
+    #  EMAIL API
+    # ════════════════════════════════════════════
+    if name == 'email.send':
+        if len(args) < 5:
+            raise NetchError(
+                "email.send needs: from, password, to, subject, body",
+                fix='email.send("you@gmail.com","pass","them@gmail.com","Subject","Body")')
+        sender, password, to, subject, body = [str(a) for a in args[:5]]
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            msg            = MIMEMultipart()
+            msg['From']    = sender
+            msg['To']      = to
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body, 'plain'))
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(sender, password)
+            server.send_message(msg)
+            server.quit()
+            print(f"[Netch] Email sent to {to}")
+        except Exception as e:
+            raise NetchError(f"email.send failed: {e}",
+                fix="For Gmail: enable 2FA and use an App Password. See: myaccount.google.com/apppasswords")
+        return None
+
+    if name == 'email.send.html':
+        if len(args) < 5:
+            raise NetchError("email.send.html needs: from, password, to, subject, html_body")
+        sender, password, to, subject, body = [str(a) for a in args[:5]]
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            msg            = MIMEMultipart('alternative')
+            msg['From']    = sender
+            msg['To']      = to
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body, 'html'))
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(sender, password)
+            server.send_message(msg)
+            server.quit()
+            print(f"[Netch] HTML email sent to {to}")
+        except Exception as e:
+            raise NetchError(f"email.send.html failed: {e}")
+        return None
+
+    # ════════════════════════════════════════════
+    #  WEBVIEW / BROWSER WIDGET
+    # ════════════════════════════════════════════
+    if name == 'browser.open':
+        url = str(args[0]) if args else ''
+        w   = int(args[1]) if len(args)>1 else 900
+        h   = int(args[2]) if len(args)>2 else 600
+        try:
+            import webview
+            def _open():
+                webview.create_window('Netch Browser', url, width=w, height=h)
+                webview.start()
+            import threading as _t
+            _t.Thread(target=_open, daemon=True).start()
+        except ImportError:
+            import webbrowser
+            webbrowser.open(url)
+            print(f"[Netch] Opened in system browser: {url}")
+            print("[Netch] For embedded browser: pip install pywebview")
+        return None
+
+    # ════════════════════════════════════════════
+    #  PLUGIN SYSTEM
+    # ════════════════════════════════════════════
+    if name == 'plugin.load':
+        path = str(args[0]) if args else ''
+        if not os.path.exists(path):
+            raise NetchError(f"Plugin not found: {path}",
+                fix="Check the plugin path is correct.")
+        try:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("netch_plugin", path)
+            mod  = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            if hasattr(mod, 'NETCH_BUILTINS'):
+                for fn_name, fn in mod.NETCH_BUILTINS.items():
+                    s.variables[f'__plugin_{fn_name}__'] = fn
+            print(f"[Netch] Plugin loaded: {path}")
+        except Exception as e:
+            raise NetchError(f"plugin.load failed: {e}")
+        return None
+
+    if name == 'plugin.call':
+        fn_name = str(args[0]) if args else ''
+        fn_args = args[1:]
+        fn      = s.variables.get(f'__plugin_{fn_name}__')
+        if fn:
+            return fn(fn_args)
+        raise NetchError(f"Plugin function not found: {fn_name}",
+            fix=f"Make sure the plugin is loaded with plugin.load() and exports {fn_name}")
+
+    # ── AI integration (ainetchintegration package) ──
+    if name in ('ai.key','ai.system','ai.model','ai.ask','ai.chat','ai.clear','ai.history'):
+        if "__pkg_ainetchintegration__" not in state.variables:
+            raise NetchError(
+                f"{name}() requires the ainetchintegration package.",
+                fix="Add this to the top of your script: importpkg ainetchintegration"
+            )
+        import sys as _sys
+        for _mod in list(_sys.modules.values()):
+            if hasattr(_mod,'PACKAGE_NAME') and getattr(_mod,'PACKAGE_NAME','')=='ainetchintegration':
+                fn = _mod.NETCH_BUILTINS.get(name)
+                if fn: return fn(args)
+        return None
+
     # ── user functions ──
     if name in s.functions:
         run_block(s.functions[name]); return None

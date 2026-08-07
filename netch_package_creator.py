@@ -1,465 +1,434 @@
+#!/usr/bin/env python3
 """
 Netch Package Creator
+A GUI tool to create .ntchpkg packages easily
 An Aerotion Production
-
-Creates .ntchpkg files for the Netch 2 package manager.
-Just fill in the fields and click Create Package!
 """
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os, json, zipfile, shutil, re
 
-# ─────────────────────────────────────────────
-#  THEME
-# ─────────────────────────────────────────────
+NETCH_DIR    = os.path.join(os.path.expanduser("~"), "Netch2")
+PACKAGES_DIR = os.path.join(NETCH_DIR, "packages")
+os.makedirs(PACKAGES_DIR, exist_ok=True)
 
-BG        = "#1e1e2e"
-PANEL     = "#2a2a3e"
-ACCENT    = "#7c6af7"
-ACCENT2   = "#5a4fcf"
-TEXT      = "#e0e0f0"
-SUBTEXT   = "#9090b0"
-INPUT_BG  = "#12121e"
-INPUT_FG  = "#e0e0f0"
-SUCCESS   = "#3fb950"
-WARNING   = "#e3b341"
-ERROR     = "#f85149"
-BORDER    = "#3a3a5a"
-FONT      = "Segoe UI"
+# ── theme ──
+BG       = "#1a1a2e"
+PANEL    = "#16213e"
+ACCENT   = "#0f3460"
+BLUE     = "#4361ee"
+GREEN    = "#4cc9f0"
+WHITE    = "#e0e0e0"
+GRAY     = "#888888"
+RED      = "#e63946"
+FONT     = ("Segoe UI", 11)
+FONT_SM  = ("Segoe UI", 9)
+FONT_LG  = ("Segoe UI", 14, "bold")
+MONO     = ("Consolas", 10)
 
-# ─────────────────────────────────────────────
-#  APP
-# ─────────────────────────────────────────────
-
-class NetchPackageCreator:
+class PackageCreator:
     def __init__(self, root):
         self.root = root
-        self.root.title("Netch Package Creator — An Aerotion Production")
-        self.root.geometry("800x700")
+        self.root.title("Netch Package Creator — Aerotion Productions")
+        self.root.geometry("860x680")
         self.root.configure(bg=BG)
-        self.root.resizable(False, False)
+        self.root.resizable(True, True)
 
-        self.extra_files = []  # list of extra file paths to bundle
-        self.builtin_entries = []  # list of (name_var, code_var) pairs
+        self.extra_files = []   # list of (src_path, dest_name)
+        self.build_ui()
 
-        self._build_ui()
-
-    # ─────────────────────────────────────────
+    # ────────────────────────────────────────────
     #  UI
-    # ─────────────────────────────────────────
+    # ────────────────────────────────────────────
 
-    def _build_ui(self):
-        # header
-        header = tk.Frame(self.root, bg=ACCENT, height=56)
-        header.pack(fill="x")
-        header.pack_propagate(False)
-        tk.Label(header, text="📦  Netch Package Creator",
-                 bg=ACCENT, fg="white",
-                 font=(FONT, 16, "bold")).pack(side="left", padx=18, pady=12)
-        tk.Label(header, text="An Aerotion Production",
-                 bg=ACCENT, fg="#d0c8ff",
-                 font=(FONT, 9)).pack(side="right", padx=18)
+    def build_ui(self):
+        # ── top bar ──
+        top = tk.Frame(self.root, bg=ACCENT, height=56)
+        top.pack(fill="x")
+        top.pack_propagate(False)
 
-        # scrollable canvas
-        canvas = tk.Canvas(self.root, bg=BG, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
-        self.scroll_frame = tk.Frame(canvas, bg=BG)
-        self.scroll_frame.bind("<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        canvas.bind_all("<MouseWheel>",
-            lambda e: canvas.yview_scroll(-1*(e.delta//120), "units"))
+        tk.Label(top, text="📦  Netch Package Creator",
+                 bg=ACCENT, fg=WHITE, font=FONT_LG).pack(side="left", padx=20, pady=12)
+        tk.Label(top, text="An Aerotion Production",
+                 bg=ACCENT, fg=GRAY, font=FONT_SM).pack(side="right", padx=20)
 
-        f = self.scroll_frame
-        pad = {"padx": 24, "pady": 6}
+        # ── notebook / tabs ──
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("TNotebook",       background=BG, borderwidth=0)
+        style.configure("TNotebook.Tab",   background=PANEL, foreground=GRAY,
+                        padding=[16,8], font=FONT)
+        style.map("TNotebook.Tab",
+                  background=[("selected", BLUE)],
+                  foreground=[("selected", WHITE)])
 
-        # ── SECTION: Package Info ──
-        self._section(f, "📋  Package Info")
+        self.nb = ttk.Notebook(self.root)
+        self.nb.pack(fill="both", expand=True, padx=12, pady=12)
 
-        self.pkg_name    = self._field(f, "Package Name *",
-            "e.g. customwindowtitle  (lowercase, no spaces)", **pad)
-        self.pkg_version = self._field(f, "Version *",
-            "e.g. 1.0.0", **pad)
-        self.pkg_desc    = self._field(f, "Description *",
-            "What does this package do?", **pad)
-        self.pkg_author  = self._field(f, "Author",
-            "Your name or username", **pad)
+        self.tab_info   = tk.Frame(self.nb, bg=BG)
+        self.tab_code   = tk.Frame(self.nb, bg=BG)
+        self.tab_files  = tk.Frame(self.nb, bg=BG)
+        self.tab_build  = tk.Frame(self.nb, bg=BG)
 
-        # ── SECTION: Usage Example ──
-        self._section(f, "📖  How to Use  (shown after install)")
+        self.nb.add(self.tab_info,  text="  📋 Package Info  ")
+        self.nb.add(self.tab_code,  text="  📝 Code  ")
+        self.nb.add(self.tab_files, text="  📁 Extra Files  ")
+        self.nb.add(self.tab_build, text="  🔨 Build  ")
 
-        tk.Label(f, text="Usage lines (one per line):",
-                 bg=BG, fg=SUBTEXT, font=(FONT, 9)).pack(anchor="w", **pad)
-        self.usage_box = tk.Text(f, height=4, bg=INPUT_BG, fg=INPUT_FG,
-                                  insertbackground=INPUT_FG,
-                                  font=("Consolas", 10),
-                                  relief="flat", bd=0,
-                                  highlightbackground=BORDER,
-                                  highlightthickness=1)
-        self.usage_box.pack(fill="x", **pad)
-        self.usage_box.insert("1.0", "importpkg yourpackage\n# add your usage here")
+        self._build_info_tab()
+        self._build_code_tab()
+        self._build_files_tab()
+        self._build_build_tab()
 
-        # ── SECTION: Netch Builtins ──
-        self._section(f, "⚙️  Netch Commands  (functions your package adds)")
+    # ── helpers ──
+    def label(self, parent, text, small=False):
+        tk.Label(parent, text=text, bg=BG, fg=GRAY if small else WHITE,
+                 font=FONT_SM if small else FONT).pack(anchor="w", padx=20, pady=(10,2))
 
-        tk.Label(f,
-            text="Each command becomes callable in .ntch scripts as  commandname(args)",
-            bg=BG, fg=SUBTEXT, font=(FONT, 9)).pack(anchor="w", **pad)
+    def entry(self, parent, textvariable, placeholder=""):
+        e = tk.Entry(parent, textvariable=textvariable,
+                     bg=PANEL, fg=WHITE, insertbackground=WHITE,
+                     relief="flat", font=FONT, bd=0, highlightthickness=1,
+                     highlightcolor=BLUE, highlightbackground=ACCENT)
+        e.pack(fill="x", padx=20, pady=2, ipady=8)
+        if placeholder and not textvariable.get():
+            e.insert(0, placeholder)
+            e.config(fg=GRAY)
+            e.bind("<FocusIn>",  lambda ev, en=e, ph=placeholder, tv=textvariable:
+                   self._clear_placeholder(ev, en, ph, tv))
+            e.bind("<FocusOut>", lambda ev, en=e, ph=placeholder, tv=textvariable:
+                   self._set_placeholder(ev, en, ph, tv))
+        return e
 
-        self.builtins_frame = tk.Frame(f, bg=BG)
-        self.builtins_frame.pack(fill="x", **pad)
-        self._add_builtin_row()  # start with one
+    def _clear_placeholder(self, e, entry, placeholder, tv):
+        if entry.get() == placeholder:
+            entry.delete(0, "end")
+            entry.config(fg=WHITE)
 
-        tk.Button(f, text="+ Add Command",
-                  bg=PANEL, fg=ACCENT,
-                  font=(FONT, 9, "bold"),
-                  relief="flat", bd=0,
-                  padx=12, pady=6,
-                  cursor="hand2",
-                  activebackground=BORDER,
-                  command=self._add_builtin_row).pack(anchor="w", **pad)
-
-        # ── SECTION: Extra Files ──
-        self._section(f, "📁  Extra Files  (images, sounds, data — optional)")
-
-        tk.Label(f, text="Bundle extra files into your package:",
-                 bg=BG, fg=SUBTEXT, font=(FONT, 9)).pack(anchor="w", **pad)
-
-        files_row = tk.Frame(f, bg=BG)
-        files_row.pack(fill="x", **pad)
-        tk.Button(files_row, text="+ Add Files",
-                  bg=PANEL, fg=TEXT,
-                  font=(FONT, 9), relief="flat", bd=0,
-                  padx=12, pady=6, cursor="hand2",
-                  activebackground=BORDER,
-                  command=self._pick_files).pack(side="left")
-        self.files_label = tk.Label(files_row, text="No extra files added",
-                                     bg=BG, fg=SUBTEXT, font=(FONT, 9))
-        self.files_label.pack(side="left", padx=10)
-
-        # ── SECTION: Warning ──
-        self._section(f, "⚠️  Safety Warning  (optional — for dangerous packages)")
-
-        self.warning_var = tk.BooleanVar()
-        tk.Checkbutton(f, text="This package requires the flag system (like controllocalapps)",
-                       variable=self.warning_var,
-                       bg=BG, fg=TEXT,
-                       selectcolor=INPUT_BG,
-                       activebackground=BG,
-                       font=(FONT, 9),
-                       command=self._toggle_warning).pack(anchor="w", **pad)
-
-        self.warning_frame = tk.Frame(f, bg=BG)
-        self.warning_text  = self._field(self.warning_frame, "Warning message",
-            "e.g. THIS MAY BREAK STUFF ONLY USE IF YOU KNOW WHAT YOU ARE DOING",
-            padx=24, pady=4)
-
-        # ── OUTPUT ──
-        self._section(f, "💾  Output")
-
-        out_row = tk.Frame(f, bg=BG)
-        out_row.pack(fill="x", **pad)
-        self.out_path = tk.Entry(out_row, bg=INPUT_BG, fg=INPUT_FG,
-                                  insertbackground=INPUT_FG,
-                                  font=(FONT, 10), relief="flat",
-                                  highlightbackground=BORDER,
-                                  highlightthickness=1, width=48)
-        self.out_path.pack(side="left", ipady=6, padx=(0,8))
-        self.out_path.insert(0, os.path.join(os.path.expanduser("~"), "Desktop"))
-        tk.Button(out_row, text="Browse",
-                  bg=PANEL, fg=TEXT,
-                  font=(FONT, 9), relief="flat", bd=0,
-                  padx=12, pady=6, cursor="hand2",
-                  activebackground=BORDER,
-                  command=self._pick_output).pack(side="left")
-
-        # ── STATUS ──
-        self.status_var = tk.StringVar(value="")
-        self.status_lbl = tk.Label(f, textvariable=self.status_var,
-                                    bg=BG, fg=SUCCESS,
-                                    font=(FONT, 9, "bold"),
-                                    wraplength=700, justify="left")
-        self.status_lbl.pack(anchor="w", **pad)
-
-        # ── CREATE BUTTON ──
-        tk.Button(f, text="✅  Create Package",
-                  bg=ACCENT, fg="white",
-                  font=(FONT, 13, "bold"),
-                  relief="flat", bd=0,
-                  padx=24, pady=12,
-                  cursor="hand2",
-                  activebackground=ACCENT2,
-                  activeforeground="white",
-                  command=self._create_package).pack(pady=20)
-
-        tk.Label(f, text="", bg=BG).pack()  # spacer
-
-    def _section(self, parent, title):
-        frame = tk.Frame(parent, bg=BG)
-        frame.pack(fill="x", padx=24, pady=(16, 2))
-        tk.Label(frame, text=title, bg=BG, fg=ACCENT,
-                 font=(FONT, 11, "bold")).pack(side="left")
-        tk.Frame(frame, bg=BORDER, height=1).pack(
-            side="left", fill="x", expand=True, padx=10, pady=6)
-
-    def _field(self, parent, label, placeholder="", **pack_kwargs):
-        tk.Label(parent, text=label, bg=BG, fg=TEXT,
-                 font=(FONT, 9, "bold")).pack(anchor="w", **pack_kwargs)
-        entry = tk.Entry(parent, bg=INPUT_BG, fg=INPUT_FG,
-                         insertbackground=INPUT_FG,
-                         font=(FONT, 10), relief="flat",
-                         highlightbackground=BORDER,
-                         highlightthickness=1)
-        entry.pack(fill="x", ipady=7, **pack_kwargs)
-        if placeholder:
+    def _set_placeholder(self, e, entry, placeholder, tv):
+        if not entry.get():
             entry.insert(0, placeholder)
-            entry.config(fg=SUBTEXT)
-            def on_focus_in(e, en=entry, ph=placeholder):
-                if en.get() == ph: en.delete(0, "end"); en.config(fg=INPUT_FG)
-            def on_focus_out(e, en=entry, ph=placeholder):
-                if not en.get(): en.insert(0, ph); en.config(fg=SUBTEXT)
-            entry.bind("<FocusIn>",  on_focus_in)
-            entry.bind("<FocusOut>", on_focus_out)
-        return entry
+            entry.config(fg=GRAY)
 
-    def _add_builtin_row(self):
-        row = tk.Frame(self.builtins_frame, bg=PANEL,
-                       highlightbackground=BORDER, highlightthickness=1)
-        row.pack(fill="x", pady=4)
+    def btn(self, parent, text, cmd, color=BLUE, side="left"):
+        b = tk.Button(parent, text=text, command=cmd,
+                      bg=color, fg=WHITE, relief="flat", font=FONT,
+                      padx=18, pady=8, cursor="hand2",
+                      activebackground=color, activeforeground=WHITE, bd=0)
+        b.pack(side=side, padx=6, pady=6)
+        b.bind("<Enter>", lambda e: b.config(bg=self._lighten(color)))
+        b.bind("<Leave>", lambda e: b.config(bg=color))
+        return b
 
-        name_var = tk.StringVar()
-        code_var = tk.StringVar()
+    def _lighten(self, hex_color):
+        try:
+            r=int(hex_color[1:3],16); g=int(hex_color[3:5],16); b=int(hex_color[5:7],16)
+            r=min(255,r+30); g=min(255,g+30); b=min(255,b+30)
+            return f"#{r:02x}{g:02x}{b:02x}"
+        except: return hex_color
 
-        tk.Label(row, text="Command name:", bg=PANEL, fg=SUBTEXT,
-                 font=(FONT, 8)).grid(row=0, column=0, sticky="w", padx=8, pady=(8,2))
-        name_entry = tk.Entry(row, textvariable=name_var,
-                               bg=INPUT_BG, fg=INPUT_FG,
-                               insertbackground=INPUT_FG,
-                               font=("Consolas", 10), relief="flat",
-                               highlightbackground=BORDER, highlightthickness=1,
-                               width=22)
-        name_entry.grid(row=1, column=0, padx=8, pady=(0,8), ipady=5)
-        name_entry.insert(0, "mycommand")
+    # ── info tab ──
+    def _build_info_tab(self):
+        p = self.tab_info
+        tk.Label(p, text="Package Information", bg=BG, fg=WHITE,
+                 font=FONT_LG).pack(anchor="w", padx=20, pady=(18,4))
+        tk.Label(p, text="Fill in the details about your package.",
+                 bg=BG, fg=GRAY, font=FONT_SM).pack(anchor="w", padx=20, pady=(0,12))
 
-        tk.Label(row, text="Python code (use 'args' for arguments):",
-                 bg=PANEL, fg=SUBTEXT, font=(FONT, 8)).grid(
-                     row=0, column=1, sticky="w", padx=8, pady=(8,2))
-        code_entry = tk.Entry(row, textvariable=code_var,
-                               bg=INPUT_BG, fg=INPUT_FG,
-                               insertbackground=INPUT_FG,
-                               font=("Consolas", 10), relief="flat",
-                               highlightbackground=BORDER, highlightthickness=1,
-                               width=38)
-        code_entry.grid(row=1, column=1, padx=8, pady=(0,8), ipady=5)
-        code_entry.insert(0, "print(args[0] if args else 'hello!')")
+        self.v_name    = tk.StringVar()
+        self.v_version = tk.StringVar(value="1.0.0")
+        self.v_desc    = tk.StringVar()
+        self.v_author  = tk.StringVar()
+        self.v_warning = tk.StringVar()
 
-        # remove button
-        def remove_row():
-            self.builtin_entries.remove((name_var, code_var))
-            row.destroy()
+        self.label(p, "Package Name  (no spaces, lowercase)")
+        self.entry(p, self.v_name, "mypkg")
 
-        tk.Button(row, text="✕", bg=PANEL, fg=ERROR,
-                  font=(FONT, 10, "bold"), relief="flat", bd=0,
-                  cursor="hand2", activebackground=PANEL,
-                  command=remove_row).grid(row=0, column=2, rowspan=2, padx=8)
+        self.label(p, "Version")
+        self.entry(p, self.v_version, "1.0.0")
 
-        self.builtin_entries.append((name_var, code_var))
+        self.label(p, "Description")
+        self.entry(p, self.v_desc, "What does this package do?")
 
-    def _pick_files(self):
-        files = filedialog.askopenfilenames(
-            title="Pick extra files to bundle",
-            filetypes=[("All files", "*.*")])
-        if files:
-            self.extra_files = list(files)
-            names = [os.path.basename(f) for f in files]
-            self.files_label.config(
-                text=", ".join(names[:3]) + (f" +{len(names)-3} more" if len(names)>3 else ""),
-                fg=TEXT)
+        self.label(p, "Author")
+        self.entry(p, self.v_author, "Your name")
 
-    def _pick_output(self):
-        path = filedialog.askdirectory(title="Choose output folder")
-        if path:
-            self.out_path.delete(0, "end")
-            self.out_path.insert(0, path)
+        self.label(p, "Warning  (optional — shown during install)")
+        self.entry(p, self.v_warning, "Leave blank if none")
 
-    def _toggle_warning(self):
-        if self.warning_var.get():
-            self.warning_frame.pack(fill="x", padx=24)
-        else:
-            self.warning_frame.pack_forget()
+        # usage lines
+        self.label(p, "Usage lines  (shown after install — one per line)")
+        self.usage_box = tk.Text(p, height=4, bg=PANEL, fg=WHITE,
+                                 insertbackground=WHITE, relief="flat",
+                                 font=MONO, bd=0, highlightthickness=1,
+                                 highlightbackground=ACCENT)
+        self.usage_box.pack(fill="x", padx=20, pady=2)
+        self.usage_box.insert("end", "importpkg mypkg\n")
 
-    def _status(self, msg, color=SUCCESS):
-        self.status_var.set(msg)
-        self.status_lbl.config(fg=color)
-        self.root.update()
+    # ── code tab ──
+    def _build_code_tab(self):
+        p = self.tab_code
+        tk.Label(p, text="Package Code  (init.py)",
+                 bg=BG, fg=WHITE, font=FONT_LG).pack(anchor="w", padx=20, pady=(18,2))
+        tk.Label(p,
+                 text="This is the Python code that runs when someone does importpkg yourpkg\n"
+                      "Use NETCH_BUILTINS dict to register new functions that work in .ntch scripts.",
+                 bg=BG, fg=GRAY, font=FONT_SM, justify="left").pack(anchor="w", padx=20, pady=(0,10))
 
-    # ─────────────────────────────────────────
-    #  CREATE PACKAGE
-    # ─────────────────────────────────────────
+        # toolbar
+        bar = tk.Frame(p, bg=BG)
+        bar.pack(fill="x", padx=20, pady=(0,4))
+        self.btn(bar, "Insert Template", self._insert_template)
+        self.btn(bar, "Insert Builtin Example", self._insert_builtin_example)
 
-    def _create_package(self):
-        # ── validate ──
-        def get(entry):
-            v = entry.get().strip()
-            return "" if v in ("", None) else v
+        self.code_box = tk.Text(p, bg=PANEL, fg=WHITE,
+                                insertbackground=WHITE, relief="flat",
+                                font=MONO, bd=0, highlightthickness=1,
+                                highlightbackground=ACCENT,
+                                wrap="none", tabs=("1c",))
+        self.code_box.pack(fill="both", expand=True, padx=20, pady=(0,12))
 
-        name    = get(self.pkg_name)
-        version = get(self.pkg_version)
-        desc    = get(self.pkg_desc)
-        author  = get(self.pkg_author) or "Unknown"
-        out_dir = get(self.out_path)
+        # scrollbar
+        sb = tk.Scrollbar(self.code_box, command=self.code_box.yview)
+        self.code_box.config(yscrollcommand=sb.set)
 
-        # clear placeholder junk
-        placeholders = [
-            "e.g. customwindowtitle  (lowercase, no spaces)",
-            "e.g. 1.0.0",
-            "What does this package do?",
-            "Your name or username",
-        ]
-        if name in placeholders:    name = ""
-        if version in placeholders: version = ""
-        if desc in placeholders:    desc = ""
+        self._insert_template()
 
-        if not name:
-            self._status("❌  Package name is required.", ERROR); return
-        if not re.match(r'^[a-z0-9_]+$', name):
-            self._status("❌  Package name: lowercase letters, numbers, underscores only.", ERROR); return
-        if not version:
-            self._status("❌  Version is required (e.g. 1.0.0).", ERROR); return
-        if not desc:
-            self._status("❌  Description is required.", ERROR); return
-        if not out_dir or not os.path.isdir(out_dir):
-            self._status("❌  Output folder doesn't exist. Click Browse to pick one.", ERROR); return
-
-        self._status("⏳  Building package...", WARNING)
-
-        # ── build init.py ──
-        usage_lines = [l for l in self.usage_box.get("1.0","end").splitlines() if l.strip()]
-        usage_repr  = json.dumps(usage_lines, indent=4)
-
-        builtins_code = ""
-        builtins_dict = ""
-        for name_var, code_var in self.builtin_entries:
-            fn_name  = name_var.get().strip()
-            fn_code  = code_var.get().strip()
-            if fn_name and fn_code:
-                safe_name = fn_name.replace(".", "_").replace("-", "_")
-                builtins_code += f'\ndef _cmd_{safe_name}(args):\n    {fn_code}\n'
-                builtins_dict += f'    "{fn_name}": _cmd_{safe_name},\n'
-
-        warning_block = ""
-        if self.warning_var.get():
-            warn_msg = get(self.warning_text)
-            warning_block = f'''
-WARNING = "{warn_msg}"
-_flags  = {{"acknowledged": False}}
-
-def require_flag():
-    if not _flags["acknowledged"]:
-        raise RuntimeError(
-            f"Package \\"{name}\\" requires acknowledgement.\\n"
-            f"  Warning: {{WARNING}}\\n"
-            f"  Fix: Add the flag system to your script."
-        )
-'''
-
-        init_py = f'''"""
-Netch Package: {name} v{version}
-{desc}
-Author: {author}
-Generated by Netch Package Creator
+    def _insert_template(self):
+        name = self.v_name.get().strip() or "mypkg"
+        self.code_box.delete("1.0", "end")
+        self.code_box.insert("end", f'''"""
+Netch Package: {name}
+{self.v_desc.get().strip() or "My package description"}
 """
 
 PACKAGE_NAME    = "{name}"
-PACKAGE_VERSION = "{version}"
-{warning_block}
-{builtins_code}
+PACKAGE_VERSION = "{self.v_version.get().strip() or "1.0.0"}"
 
+# Register functions that can be used in .ntch scripts
+# Format: "functionname": lambda args: your_code_here
 NETCH_BUILTINS = {{
-{builtins_dict}}}
+    # "myfunction": lambda args: print("Hello from {name}!"),
+}}
 
-def on_load():
-    print(f"[{name}] v{version} loaded!")
-    print(f"[{name}] {desc}")
+# This runs when the package is loaded
+print(f"[{name}] Package loaded!")
+''')
 
-on_load()
-'''
+    def _insert_builtin_example(self):
+        self.code_box.insert("end", '''
+# ── Example: add a new function to netch ──
+# After adding this, users can call: myalert("Hello!")
+def _my_alert(args):
+    import tkinter.messagebox as mb
+    msg = str(args[0]) if args else "Alert!"
+    mb.showinfo("Alert", msg)
 
-        # ── build package.json ──
-        meta = {
-            "name":        name,
-            "version":     version,
-            "description": desc,
-            "author":      author,
-            "installed":   False,
-            "usage":       usage_lines,
-        }
-        if self.warning_var.get():
-            meta["warning"] = get(self.warning_text)
+NETCH_BUILTINS["myalert"] = _my_alert
+''')
 
-        # ── write to temp folder and zip ──
-        tmp_dir  = os.path.join(out_dir, f"_tmp_{name}")
-        pkg_path = os.path.join(out_dir, f"{name}.ntchpkg")
+    # ── files tab ──
+    def _build_files_tab(self):
+        p = self.tab_files
+        tk.Label(p, text="Extra Files",
+                 bg=BG, fg=WHITE, font=FONT_LG).pack(anchor="w", padx=20, pady=(18,2))
+        tk.Label(p, text="Add images, data files, or anything else your package needs.",
+                 bg=BG, fg=GRAY, font=FONT_SM).pack(anchor="w", padx=20, pady=(0,12))
+
+        bar = tk.Frame(p, bg=BG)
+        bar.pack(fill="x", padx=20, pady=(0,8))
+        self.btn(bar, "＋  Add File", self._add_file)
+        self.btn(bar, "✕  Remove Selected", self._remove_file, color=RED)
+
+        # file list
+        list_frame = tk.Frame(p, bg=PANEL, bd=0, highlightthickness=1,
+                              highlightbackground=ACCENT)
+        list_frame.pack(fill="both", expand=True, padx=20, pady=(0,12))
+
+        self.file_listbox = tk.Listbox(list_frame, bg=PANEL, fg=WHITE,
+                                       selectbackground=BLUE, relief="flat",
+                                       font=FONT, bd=0, highlightthickness=0)
+        self.file_listbox.pack(fill="both", expand=True, padx=4, pady=4)
+
+        tk.Label(p, text="Files are included in the .ntchpkg and extracted when installed.",
+                 bg=BG, fg=GRAY, font=FONT_SM).pack(anchor="w", padx=20)
+
+    def _add_file(self):
+        paths = filedialog.askopenfilenames(title="Select files to include in package")
+        for path in paths:
+            dest = os.path.basename(path)
+            self.extra_files.append((path, dest))
+            self.file_listbox.insert("end", f"  {dest}  ←  {path}")
+
+    def _remove_file(self):
+        sel = self.file_listbox.curselection()
+        for idx in reversed(sel):
+            self.file_listbox.delete(idx)
+            self.extra_files.pop(idx)
+
+    # ── build tab ──
+    def _build_build_tab(self):
+        p = self.tab_build
+        tk.Label(p, text="Build Package",
+                 bg=BG, fg=WHITE, font=FONT_LG).pack(anchor="w", padx=20, pady=(18,2))
+        tk.Label(p, text="Review and build your .ntchpkg file.",
+                 bg=BG, fg=GRAY, font=FONT_SM).pack(anchor="w", padx=20, pady=(0,12))
+
+        # output dir
+        dir_frame = tk.Frame(p, bg=BG)
+        dir_frame.pack(fill="x", padx=20, pady=4)
+        tk.Label(dir_frame, text="Save to:", bg=BG, fg=WHITE, font=FONT).pack(side="left")
+        self.v_outdir = tk.StringVar(value=os.path.join(os.path.expanduser("~"), "Desktop"))
+        tk.Entry(dir_frame, textvariable=self.v_outdir, bg=PANEL, fg=WHITE,
+                 relief="flat", font=FONT, insertbackground=WHITE,
+                 highlightthickness=1, highlightbackground=ACCENT).pack(
+                 side="left", fill="x", expand=True, padx=8, ipady=6)
+        self.btn(dir_frame, "Browse", lambda: self.v_outdir.set(
+            filedialog.askdirectory() or self.v_outdir.get()))
+
+        # also install locally checkbox
+        self.v_also_install = tk.BooleanVar(value=True)
+        tk.Checkbutton(p, text="Also install to local Netch packages folder  (so you can test it right away)",
+                       variable=self.v_also_install, bg=BG, fg=WHITE,
+                       selectcolor=PANEL, activebackground=BG,
+                       font=FONT).pack(anchor="w", padx=20, pady=8)
+
+        # build button
+        build_frame = tk.Frame(p, bg=BG)
+        build_frame.pack(pady=8)
+        big_btn = tk.Button(build_frame, text="  🔨  Build .ntchpkg  ",
+                            command=self.build_package,
+                            bg=GREEN, fg="#0a0a0a", relief="flat",
+                            font=("Segoe UI", 13, "bold"),
+                            padx=28, pady=14, cursor="hand2",
+                            activebackground="#38b2d8")
+        big_btn.pack()
+
+        # log
+        tk.Label(p, text="Build Log", bg=BG, fg=GRAY, font=FONT_SM).pack(
+            anchor="w", padx=20, pady=(16,2))
+        self.log_box = tk.Text(p, height=12, bg=PANEL, fg=GREEN,
+                               insertbackground=WHITE, relief="flat",
+                               font=MONO, bd=0, state="disabled",
+                               highlightthickness=1, highlightbackground=ACCENT)
+        self.log_box.pack(fill="both", expand=True, padx=20, pady=(0,12))
+
+    # ────────────────────────────────────────────
+    #  BUILD LOGIC
+    # ────────────────────────────────────────────
+
+    def log(self, msg, color=None):
+        self.log_box.config(state="normal")
+        self.log_box.insert("end", msg + "\n")
+        self.log_box.see("end")
+        self.log_box.config(state="disabled")
+
+    def build_package(self):
+        self.log_box.config(state="normal")
+        self.log_box.delete("1.0", "end")
+        self.log_box.config(state="disabled")
+
+        # ── validate ──
+        name    = self.v_name.get().strip()
+        version = self.v_version.get().strip() or "1.0.0"
+        desc    = self.v_desc.get().strip()
+        author  = self.v_author.get().strip()
+        warning = self.v_warning.get().strip()
+        outdir  = self.v_outdir.get().strip()
+        code    = self.code_box.get("1.0", "end").strip()
+        usage   = [l for l in self.usage_box.get("1.0","end").splitlines() if l.strip()]
+
+        if not name:
+            messagebox.showerror("Missing Info", "Package name is required!"); return
+        if not re.match(r'^[a-z0-9_]+$', name):
+            messagebox.showerror("Invalid Name",
+                "Package name must be lowercase with no spaces.\nOnly letters, numbers, underscores."); return
+        if not desc:
+            messagebox.showerror("Missing Info", "Description is required!"); return
+        if not os.path.isdir(outdir):
+            messagebox.showerror("Bad Output Dir", f"Output folder doesn't exist:\n{outdir}"); return
+
+        self.log(f"Starting build: {name} v{version}")
+        self.log("━"*44)
+
+        # ── temp build folder ──
+        import tempfile
+        tmp = tempfile.mkdtemp(prefix="netch_pkg_")
+        self.log(f"Temp folder: {tmp}")
 
         try:
-            os.makedirs(tmp_dir, exist_ok=True)
+            # write init.py
+            init_path = os.path.join(tmp, "init.py")
+            with open(init_path, "w", encoding="utf-8") as f:
+                f.write(code)
+            self.log("✓ init.py written")
 
-            with open(os.path.join(tmp_dir, "init.py"), "w") as f:
-                f.write(init_py)
-            with open(os.path.join(tmp_dir, "package.json"), "w") as f:
+            # write package.json
+            meta = {
+                "name":        name,
+                "version":     version,
+                "description": desc,
+                "author":      author,
+                "usage":       usage,
+            }
+            if warning and warning.lower() not in ("leave blank if none", ""):
+                meta["warning"] = warning
+            meta_path = os.path.join(tmp, "package.json")
+            with open(meta_path, "w", encoding="utf-8") as f:
                 json.dump(meta, f, indent=2)
+            self.log("✓ package.json written")
 
             # copy extra files
-            for ef in self.extra_files:
-                shutil.copy(ef, tmp_dir)
+            for src, dest in self.extra_files:
+                shutil.copy(src, os.path.join(tmp, dest))
+                self.log(f"✓ included: {dest}")
 
-            # zip everything into .ntchpkg
+            # zip into .ntchpkg
+            pkg_filename = f"{name}.ntchpkg"
+            pkg_path     = os.path.join(outdir, pkg_filename)
             with zipfile.ZipFile(pkg_path, "w", zipfile.ZIP_DEFLATED) as z:
-                for file in os.listdir(tmp_dir):
-                    z.write(os.path.join(tmp_dir, file), file)
+                for fname in os.listdir(tmp):
+                    z.write(os.path.join(tmp, fname), fname)
+            self.log(f"✓ built: {pkg_path}")
 
-            shutil.rmtree(tmp_dir)
+            # also install locally?
+            if self.v_also_install.get():
+                local_pkg_dir = os.path.join(PACKAGES_DIR, name)
+                if os.path.exists(local_pkg_dir):
+                    shutil.rmtree(local_pkg_dir)
+                os.makedirs(local_pkg_dir)
+                with zipfile.ZipFile(pkg_path, "r") as z:
+                    z.extractall(local_pkg_dir)
+                self.log(f"✓ installed locally: {local_pkg_dir}")
 
-            # also write a preview of index.json entry
-            index_entry = {name: {**meta, "file": f"{name}.ntchpkg"}}
-            index_preview_path = os.path.join(out_dir, f"{name}_index_entry.json")
-            with open(index_preview_path, "w") as f:
-                json.dump(index_entry, f, indent=2)
+            self.log("━"*44)
+            self.log(f"SUCCESS! Package ready: {pkg_filename}")
+            self.log("")
+            self.log("Next steps:")
+            self.log(f"  1. Upload {pkg_filename} to your GitHub packages/ folder")
+            self.log(f"  2. Add an entry for '{name}' to packages/index.json")
+            self.log(f"  3. Users install with: netch pkg install {name}")
+            if self.v_also_install.get():
+                self.log(f"  4. Test it now: importpkg {name}")
 
-            self._status(
-                f"✅  Package created!  →  {pkg_path}\n"
-                f"Also saved: {name}_index_entry.json  (add this to packages/index.json on GitHub)",
-                SUCCESS
-            )
-            messagebox.showinfo("Package Created!",
-                f"Your package is ready!\n\n"
-                f"📦  {name}.ntchpkg\n\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"STEP 1 — Test your package locally\n"
-                f"Put the .ntchpkg in ~/Netch2/packages/{name}/\n"
-                f"then use: importpkg {name}\n\n"
-                f"STEP 2 — Want it as an official Netch package?\n"
-                f"Post on r/netchcoding2 with:\n"
-                f"  • Title: [Package] {name}\n"
-                f"  • What it does\n"
-                f"  • Attach the .ntchpkg file\n"
-                f"Netch developers will review and add it officially!\n\n"
-                f"STEP 3 — Add to packages/index.json on GitHub\n"
-                f"Use the {name}_index_entry.json file as a reference.")
+            messagebox.showinfo("Build Complete!",
+                f"Package built successfully!\n\n"
+                f"File: {pkg_path}\n\n"
+                f"Upload it to GitHub packages/ folder\n"
+                f"and add it to packages/index.json")
 
         except Exception as e:
-            shutil.rmtree(tmp_dir, ignore_errors=True)
-            self._status(f"❌  Error: {e}", ERROR)
+            self.log(f"ERROR: {e}")
+            messagebox.showerror("Build Failed", str(e))
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
-# ─────────────────────────────────────────────
-#  RUN
-# ─────────────────────────────────────────────
+
+def main():
+    root = tk.Tk()
+    app = PackageCreator(root)
+    root.mainloop()
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app  = NetchPackageCreator(root)
-    root.mainloop()
+    main()
